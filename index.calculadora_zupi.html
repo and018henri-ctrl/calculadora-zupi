@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZUPI - Calculadora de Precificação</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas Necessárias -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Função Hash Simples (Substitui crypto.subtle offline) -->
+    <script>
+        function sha256(ascii) {
+            function rightRotate(value, amount) { return (value>>>amount) | (value<<(32 - amount)); }
+            var mathPow = Math.pow, maxWord = mathPow(2, 32), lengthProperty = 'length', i, j, result = '', words = [], asciiBitLength = ascii[lengthProperty]*8;
+            var hash = sha256.h = sha256.h || [], k = sha256.k = sha256.k || [], primeCounter = k[lengthProperty], isComposite = {}, candidate = 2;
+            while (primeCounter < 64) { if (!isComposite[candidate]) { for (i = 0; i < 313; i += candidate) isComposite[i] = candidate; hash[primeCounter] = (mathPow(candidate, .5)*maxWord)|0; k[primeCounter++] = (mathPow(candidate, 1/3)*maxWord)|0; } candidate++; }
+            ascii += '\x80'; while (ascii[lengthProperty]%64 - 56) ascii += '\x00';
+            for (i = 0; i < ascii[lengthProperty]; i++) { j = ascii.charCodeAt(i); if (j>>8) return; words[i>>2] |= j << ((3 - i)%4)*8; }
+            words[words[lengthProperty]] = ((asciiBitLength/maxWord)|0); words[words[lengthProperty]] = (asciiBitLength);
+            for (j = 0; j < words[lengthProperty];) {
+                var w = words.slice(j, j += 16), oldHash = hash; hash = hash.slice(0, 8);
+                for (i = 0; i < 64; i++) {
+                    var i2 = i + j, w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4], temp1 = hash[7] + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) + ((e&hash[5])^((~e)&hash[6])) + k[i] + (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15>>>3)) + w[i - 7] + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2>>>10)))|0), temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) + ((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+                    hash = [(temp1 + temp2)|0].concat(hash); hash[4] = (hash[4] + temp1)|0;
+                }
+                for (i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i])|0;
+            }
+            for (i = 0; i < 8; i++) for (j = 3; j + 1; j--) { var b = (hash[i]>>(j*8))&255; result += ((b < 16) ? 0 : '') + b.toString(16); }
+            return result;
+        }
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f1115; color: #e2e8f0; }
+        .bg-dark-900 { background-color: #1a1d24; }
+        .bg-dark-800 { background-color: #232730; }
+        .bg-dark-700 { background-color: #2d333f; }
+        .border-dark-700 { border-color: #2d333f; }
+        .border-dark-600 { border-color: #3b4252; }
+        .glass-panel { background: rgba(26, 29, 36, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .accent-gradient { background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%); }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .typing-indicator span { display: inline-block; width: 6px; height: 6px; background-color: #9ca3af; border-radius: 50%; margin: 0 2px; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .toast-enter { animation: slideInUp 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative pb-28 sm:pb-0">
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+    <!-- HEADER -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-dark-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="https://pub-b678b4010047425594da4c04d6d38c57.r2.dev/logo%20zupi.png" onerror="this.src='https://placehold.co/120x40/7c3aed/ffffff?text=ZUPI'" alt="ZUPI" class="h-8 object-contain rounded">
+                <div class="h-6 w-px bg-dark-600 mx-2 hidden sm:block"></div>
+                <h1 class="text-sm sm:text-base font-bold text-gray-200 truncate max-w-[150px] sm:max-w-none">Precificação</h1>
+            </div>
+            <div class="flex items-center gap-2 sm:gap-4">
+                <button onclick="toggleAiModal()" class="flex items-center gap-2 bg-dark-800 hover:bg-dark-700 border border-dark-600 px-3 py-1.5 rounded-full transition text-sm">
+                    <span class="text-blue-400">✨</span> <span class="hidden sm:inline text-gray-300 font-medium">Assistente IA</span>
+                </button>
+                <div class="flex items-center gap-2 bg-dark-900 rounded-full pl-1 pr-3 py-1 border border-dark-700">
+                    <div class="w-7 h-7 rounded-full accent-gradient flex items-center justify-center text-xs font-bold text-white uppercase shadow-lg" id="userAvatar">Z</div>
+                    <span id="userNameDisplay" class="text-xs sm:text-sm font-medium text-gray-300 truncate max-w-[80px] sm:max-w-[120px]">Usuário</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 mt-6 w-full">
+        <div class="flex gap-2 sm:gap-4 border-b border-dark-700 overflow-x-auto scrollbar-hide px-1 pb-1">
+            <button onclick="switchTab('tab-calc')" id="btn-tab-calc" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition border-b-2 border-blue-500 text-blue-400 whitespace-nowrap">Pacotes Simples</button>
+            <button onclick="switchTab('tab-contratos')" id="btn-tab-contratos" class="tab-btn px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 transition whitespace-nowrap">Contratos p/ Empresas</button>
+            <button onclick="switchTab('tab-matriz')" id="btn-tab-matriz" class="tab-btn px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 transition whitespace-nowrap">Matriz Dinâmica</button>
+            <button onclick="switchTab('tab-salvos')" id="btn-tab-salvos" class="tab-btn px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 transition whitespace-nowrap">Orçamentos Salvos</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full relative">
+        
+        <!-- ABA: CALCULADORA (EVENTOS) -->
+        <div id="tab-calc" class="tab-content flex flex-col lg:flex-row gap-6">
+            <div class="w-full lg:w-2/3 space-y-4">
+                <div class="bg-dark-900 border border-dark-700 rounded-2xl p-4 sm:p-5 shadow-lg">
+                    <h3 class="text-sm font-bold text-gray-300 mb-4 flex items-center gap-2"><span class="text-purple-500">📝</span> Dados do Cliente</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label class="block text-xs text-gray-400 mb-1">Nome do Cliente / Orçamento</label><input type="text" id="clientName" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none" placeholder="Ex: Hotel ZUPI"></div>
+                        <div><label class="block text-xs text-gray-400 mb-1">Duração Total do Evento (Dias)</label><input type="number" id="eventDays" value="1" min="1" oninput="calcularTotaisEvento(); renderEventCart();" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none font-bold"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end">
+                    <h3 class="text-sm font-bold text-gray-300 flex items-center gap-2"><span class="text-blue-500">🛠️</span> Serviços Contratados</h3>
+                    <button onclick="addServiceToEvent()" class="text-xs bg-dark-800 hover:bg-dark-700 border border-dark-600 text-blue-400 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1">+ Novo Serviço</button>
+                </div>
+                <div id="eventCartContainer" class="space-y-4"></div>
+            </div>
+
+            <!-- RESUMO FIXO -->
+            <div class="w-full lg:w-1/3">
+                <div class="bg-dark-900 border border-dark-700 rounded-2xl p-5 shadow-2xl lg:sticky lg:top-24">
+                    <div class="text-center pb-4 border-b border-dark-700 mb-4">
+                        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total do Pacote</h2>
+                        <div class="text-4xl font-black text-transparent bg-clip-text accent-gradient" id="resFaturamento">R$ 0,00</div>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Total de Serviços</span><span class="text-white font-bold" id="resQtdServicos">0</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Tamanho da Equipe</span><span class="text-white font-bold" id="resEquipeTotal">0 Profissionais</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Total Diárias Operadas</span><span class="text-white font-bold" id="resDiariasTotal">0</span></div>
+                        <div class="h-px bg-dark-700 my-2"></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Custos de Equipe</span><span class="text-red-400 font-bold" id="resCustoEquipe">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Custos Materiais/Extras</span><span class="text-orange-400 font-bold" id="resCustoMat">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Margem Bruta ZUPI</span><span class="text-green-400 font-bold" id="resMargemBruta">R$ 0,00</span></div>
+                        
+                        <div class="bg-dark-800 rounded-lg p-3 mt-2 flex justify-between items-center border border-dark-600">
+                            <span class="text-xs text-gray-400">Margem sobre Receita</span>
+                            <span class="text-sm font-bold text-blue-400" id="resMargemPerc">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <button onclick="salvarOrcamento('evento')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-900/20">💾 Salvar Pacote</button>
+                        <button onclick="openPrintModal('evento')" class="w-full bg-dark-700 hover:bg-dark-600 text-white font-bold py-3 rounded-xl transition border border-dark-500">🖨️ Gerar PDF / Proposta</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA: CONTRATOS LONGOS (B2B) -->
+        <div id="tab-contratos" class="tab-content hidden flex flex-col lg:flex-row gap-6">
+            <div class="w-full lg:w-2/3 space-y-4">
+                <div class="bg-dark-900 border border-dark-700 rounded-2xl p-4 sm:p-5 shadow-lg">
+                    <h3 class="text-sm font-bold text-gray-300 mb-4 flex items-center gap-2"><span class="text-purple-500">🏢</span> Contrato Corporativo (B2B)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="sm:col-span-1"><label class="block text-[10px] sm:text-xs text-gray-400 mb-1 uppercase tracking-wider pl-1">Empresa Contratante</label><input type="text" id="contractClientName" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-2.5 text-white focus:border-blue-500 outline-none font-medium" placeholder="Ex: Escola ZUPI"></div>
+                        <div class="w-full">
+                            <label class="block text-[10px] sm:text-xs text-gray-400 mb-1 uppercase tracking-wider pl-1">Duração do Contrato</label>
+                            <input type="number" id="contractDuration" value="12" min="1" oninput="calcularTotaisContrato();" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-2.5 text-white font-bold focus:border-blue-500 outline-none">
+                        </div>
+                        <div class="w-full">
+                            <label class="block text-[10px] sm:text-xs text-gray-400 mb-1 uppercase tracking-wider pl-1">Unidade / Período</label>
+                            <input type="text" id="contractUnit" value="Meses" list="unitOptions" oninput="calcularTotaisContrato(); renderContractCart();" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-2.5 text-white font-bold focus:border-blue-500 outline-none" placeholder="Ex: Meses">
+                            <datalist id="unitOptions">
+                                <option value="Meses"></option>
+                                <option value="Semanas"></option>
+                                <option value="Quinzenas"></option>
+                                <option value="Anos"></option>
+                                <option value="Dias"></option>
+                            </datalist>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end">
+                    <h3 class="text-sm font-bold text-gray-300 flex items-center gap-2"><span class="text-green-500">👥</span> Equipes e Serviços do Contrato</h3>
+                    <button onclick="addServiceToContract()" class="text-xs bg-dark-800 hover:bg-dark-700 border border-dark-600 text-green-400 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1">+ Adicionar Serviço</button>
+                </div>
+
+                <div id="contractCartContainer" class="space-y-4"></div>
+            </div>
+
+            <div class="w-full lg:w-1/3">
+                <div class="bg-dark-900 border border-dark-700 rounded-2xl p-5 shadow-2xl lg:sticky lg:top-24">
+                    <div class="text-center pb-4 border-b border-dark-700 mb-4">
+                        <h2 id="labelFaturamentoCiclo" class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Faturamento (Mensal)</h2>
+                        <div class="text-3xl font-black text-white" id="contractFatMensal">R$ 0,00</div>
+                        
+                        <div class="mt-4 pt-3 border-t border-dark-600/50">
+                            <h2 id="labelValorGlobal" class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Valor Global Fechado (12 Meses)</h2>
+                            <div class="text-2xl font-black text-transparent bg-clip-text accent-gradient" id="contractFatGlobal">R$ 0,00</div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Total Equipe Alocada</span><span class="text-white font-bold" id="contractEquipeTotal">0 Profissionais</span></div>
+                        <div class="h-px bg-dark-700 my-2"></div>
+                        <h3 id="lblSubTotalTitle" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Subtotais (Mensal)</h3>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Custo Total Equipe</span><span class="text-red-400 font-bold" id="contractCustoEquipe">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Materiais/Extras</span><span class="text-orange-400 font-bold" id="contractCustoMat">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Lucro Bruto ZUPI</span><span class="text-green-400 font-bold" id="contractLucro">R$ 0,00</span></div>
+                        
+                        <div class="bg-dark-800 rounded-lg p-3 mt-2 flex justify-between items-center border border-dark-600">
+                            <span class="text-xs text-gray-400">Margem Contrato</span>
+                            <span class="text-sm font-bold text-green-400" id="contractMargemPerc">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <button onclick="salvarOrcamento('contrato')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-green-900/20">💾 Salvar Contrato</button>
+                        <button onclick="openPrintModal('contrato')" class="w-full bg-dark-700 hover:bg-dark-600 text-white font-bold py-3 rounded-xl transition border border-dark-500">🖨️ Proposta de Contrato PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA: MATRIZ DINÂMICA -->
+        <div id="tab-matriz" class="tab-content hidden">
+            <div class="bg-dark-900 border border-dark-700 rounded-2xl p-5 shadow-lg">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-dark-700 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">📊 Matriz de Precificação</h2>
+                        <p class="text-sm text-gray-400">Previsão rápida de Faturamento Final (Cliente)</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="flex flex-col"><label class="text-[10px] text-gray-400 uppercase mb-1">Máx Profissionais</label><input type="number" id="matrizMaxProf" value="10" min="1" max="50" oninput="gerarMatriz()" class="w-20 bg-dark-800 border border-dark-600 rounded p-1.5 text-white text-sm text-center"></div>
+                        <div class="flex flex-col"><label class="text-[10px] text-gray-400 uppercase mb-1">Máx Dias</label><input type="number" id="matrizMaxDias" value="7" min="1" max="30" oninput="gerarMatriz()" class="w-20 bg-dark-800 border border-dark-600 rounded p-1.5 text-white text-sm text-center"></div>
+                        <div class="flex flex-col"><label class="text-[10px] text-gray-400 uppercase mb-1">Custo Diário</label><input type="number" id="matrizCusto" value="120" oninput="gerarMatriz()" class="w-24 bg-dark-800 border border-dark-600 rounded p-1.5 text-white text-sm text-center"></div>
+                        <div class="flex flex-col"><label class="text-[10px] text-gray-400 uppercase mb-1">Margem ZUPI</label><input type="number" id="matrizMargem" value="160" oninput="gerarMatriz()" class="w-24 bg-dark-800 border border-dark-600 rounded p-1.5 text-white text-sm text-center"></div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-lg border border-dark-700 custom-scrollbar">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-400 bg-dark-800 uppercase" id="matrizHead"></thead>
+                        <tbody id="matrizBody" class="divide-y divide-dark-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA: ORÇAMENTOS SALVOS -->
+        <div id="tab-salvos" class="tab-content hidden">
+            <div class="bg-dark-900 border border-dark-700 rounded-2xl p-5 shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">📂 Orçamentos Salvos na Nuvem</h2>
+                    <button onclick="limparTodosOrcamentos()" class="text-xs text-red-400 hover:text-red-300 transition">Excluir Todos</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="savedBudgetsList">
+                    <div class="text-gray-500 text-sm text-center col-span-full py-10">Nenhum orçamento salvo no momento.</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: LOGIN / CADASTRO -->
+    <div id="loginModal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-dark-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden max-h-[95dvh] overflow-y-auto">
+            <div class="p-8">
+                <div class="text-center mb-8">
+                    <img src="https://pub-b678b4010047425594da4c04d6d38c57.r2.dev/logo%20zupi.png" onerror="this.src='https://placehold.co/200x80/7c3aed/ffffff?text=ZUPI'" alt="ZUPI Logo" class="h-16 mx-auto mb-4 object-contain">
+                    <h2 class="text-2xl font-bold text-white" id="authTitle">Acesso Restrito</h2>
+                    <p class="text-gray-400 text-sm mt-1">Ferramenta interna de precificação</p>
+                </div>
+                
+                <form id="customAuthForm" action="#" method="POST" onsubmit="handleCustomAuth(event)">
+                    <div class="space-y-4">
+                        <div id="registerNameGroup" class="hidden">
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Seu Nome</label>
+                            <input type="text" id="authName" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none" placeholder="Ex: Ana Silva">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Usuário</label>
+                            <input type="text" id="authUsername" name="username" autocomplete="username" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none lowercase" placeholder="ex: ana.silva">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Senha</label>
+                            <div class="relative">
+                                <input type="password" id="authPassword" name="password" autocomplete="current-password" class="w-full bg-dark-800 border border-dark-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none pr-10" placeholder="••••••••">
+                                <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white">
+                                    <span id="eyeIcon">👁️</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="authKeepLogged" class="w-4 h-4 rounded bg-dark-800 border-dark-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-dark-900">
+                            <label for="authKeepLogged" class="ml-2 text-sm text-gray-400">Manter conectado</label>
+                        </div>
+                    </div>
+
+                    <div id="authError" class="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm hidden text-center">Erro</div>
+                    <button type="submit" id="authBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-900/20">Entrar no Sistema</button>
+                </form>
+
+                <div class="mt-6 text-center text-sm">
+                    <span class="text-gray-400" id="authToggleText">Não tem conta?</span>
+                    <button type="button" onclick="toggleAuthMode()" id="btnToggleAuth" class="text-blue-400 font-bold hover:underline ml-1">Cadastre-se</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIGURAÇÃO DE SERVIÇOS -->
+    <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-dark-700 rounded-2xl w-full max-w-2xl shadow-2xl p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">⚙️ Configuração de Serviços</h2>
+                <button onclick="closeConfigModal()" class="text-gray-400 hover:text-white transition">✖</button>
+            </div>
+            <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar" id="configServicesList"></div>
+            <div class="mt-6 pt-4 border-t border-dark-700 flex justify-between">
+                <button onclick="addConfigServiceRow()" class="text-sm bg-dark-800 hover:bg-dark-700 border border-dark-600 text-blue-400 px-4 py-2 rounded-lg transition font-medium">+ Novo Padrão</button>
+                <button onclick="saveConfigServices()" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition shadow-lg shadow-blue-900/20">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: IMPRESSÃO PDF -->
+    <div id="printModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-900 border border-dark-700 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden max-h-[95dvh] flex flex-col">
+            <div class="p-4 border-b border-dark-700 flex justify-between items-center bg-dark-800">
+                <h2 class="text-lg font-bold text-white" id="printModalTitle">Gerar Proposta PDF</h2>
+                <div class="flex gap-2">
+                    <button onclick="downloadPDF()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition flex items-center gap-2"><span>📥</span> Baixar PDF</button>
+                    <button onclick="closePrintModal()" class="bg-dark-700 hover:bg-dark-600 text-gray-300 px-4 py-2 rounded-lg transition">Fechar</button>
+                </div>
+            </div>
+            <div class="p-4 sm:p-8 overflow-y-auto bg-gray-200 flex-grow flex justify-center">
+                <div id="pdfContent" class="bg-white text-black p-8 sm:p-12 shadow-lg rounded-sm w-[210mm] min-h-[297mm] text-sm relative">
+                    <div class="flex justify-between items-start mb-10 border-b-2 border-purple-600 pb-6">
+                        <img src="https://pub-b678b4010047425594da4c04d6d38c57.r2.dev/logo%20zupi.png" crossorigin="anonymous" onerror="this.src='https://placehold.co/200x80/7c3aed/ffffff?text=ZUPI'" alt="ZUPI Logo" class="h-12 object-contain">
+                        <div class="text-right">
+                            <h1 class="text-2xl font-black text-gray-800 mb-1" id="printTypeTitle">Proposta Comercial</h1>
+                            <p class="text-gray-500 font-medium">Ref: <span id="printClientName" class="text-gray-800"></span></p>
+                            <p class="text-gray-400 text-xs mt-1" id="printDate"></p>
+                        </div>
+                    </div>
+                    <div class="mb-8">
+                        <h3 class="text-lg font-bold text-purple-700 mb-2 border-b border-gray-200 pb-1">Resumo da Solução</h3>
+                        <p class="text-gray-600 mb-1" id="printDurationDetails">Duração do Evento: X Dias</p>
+                    </div>
+                    <table class="w-full text-left mb-8 border-collapse">
+                        <thead class="bg-gray-100 text-gray-700 text-xs uppercase" id="printTableHeader"></thead>
+                        <tbody id="printServicesList" class="divide-y divide-gray-200 text-gray-800"></tbody>
+                    </table>
+                    <div class="flex justify-end mt-10">
+                        <div class="w-64 bg-gray-50 p-4 rounded-lg border border-gray-200 text-right">
+                            <div id="printEventTotals" class="space-y-2">
+                                <div class="flex justify-between text-gray-500 text-xs"><span>Total Serviços:</span><span id="printTotalServicos"></span></div>
+                                <div class="flex justify-between text-gray-500 text-xs pb-2 border-b border-gray-200"><span>Materiais/Estrutura:</span><span id="printTotalExtras"></span></div>
+                                <div class="flex justify-between items-center pt-2">
+                                    <span class="text-sm font-bold text-gray-700 uppercase">Investimento Total</span>
+                                    <span class="text-xl font-black text-purple-700" id="printValorFinal"></span>
+                                </div>
+                            </div>
+                            <div id="printContractTotals" class="space-y-2 hidden">
+                                <h4 id="printContractCycleLabel" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-left">Faturamento (Mensal)</h4>
+                                <div class="text-2xl font-black text-gray-800 text-right" id="printFatMensal">R$ 0,00</div>
+                                <div class="pt-4 mt-2 border-t border-gray-200 text-left">
+                                    <span class="block text-[10px] text-gray-500 uppercase mb-1" id="printContractDurationSub">Contrato Fechado (12 Meses)</span>
+                                    <span class="block text-lg font-bold text-purple-700 text-right" id="printFatGlobal">R$ 0,00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-8 left-8 right-8 text-center text-xs text-gray-400 border-t border-gray-200 pt-4">Documento gerado automaticamente. Valores válidos por 15 dias.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ASSISTENTE IA (Com Histórico e Voz) -->
+    <div id="aiModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-end sm:justify-center p-0 sm:p-4 transition-opacity">
+        <div class="bg-dark-900 border border-dark-700 w-full sm:w-[500px] h-[85vh] sm:h-[600px] sm:rounded-2xl shadow-2xl flex flex-col relative overflow-hidden transform transition-transform translate-y-full sm:translate-y-0" id="aiModalContent">
+            <div id="aiHistoryPanel" class="absolute inset-y-0 left-0 w-3/4 bg-dark-800 border-r border-dark-600 z-20 transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+                <div class="p-4 border-b border-dark-700 flex justify-between items-center">
+                    <h3 class="font-bold text-white text-sm">Sessões Anteriores</h3>
+                    <button onclick="toggleAiHistoryPanel()" class="text-gray-400 hover:text-white">✖</button>
+                </div>
+                <div id="aiHistoryList" class="flex-grow overflow-y-auto p-2 space-y-2 custom-scrollbar"></div>
+                <div class="p-4 border-t border-dark-700">
+                    <button onclick="clearAllAiHistory()" class="w-full text-xs text-red-400 hover:text-red-300 py-2 border border-red-500/30 rounded transition">Apagar Histórico</button>
+                </div>
+            </div>
+
+            <div class="p-4 border-b border-dark-700 bg-dark-800 flex justify-between items-center sm:rounded-t-2xl relative z-10">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleAiHistoryPanel()" class="text-gray-400 hover:text-white p-1" title="Ver Histórico">📚</button>
+                    <div class="w-8 h-8 rounded-full accent-gradient flex items-center justify-center text-sm">✨</div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm">A&M IA — ZUPI</h3>
+                        <p class="text-[10px] text-green-400">Consultor Online</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="startNewAiSession()" class="text-gray-400 hover:text-white text-sm p-1" title="Nova Conversa Limpa">🧹</button>
+                    <button onclick="toggleAiModal()" class="text-gray-400 hover:text-white p-1">✖</button>
+                </div>
+            </div>
+            
+            <div id="aiChatBox" class="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar bg-dark-900/50 pb-24"></div>
+            
+            <div class="p-4 border-t border-dark-700 bg-dark-800 sm:rounded-b-2xl absolute bottom-0 w-full z-10">
+                <div class="relative flex items-center gap-2">
+                    <input type="text" id="aiInput" class="w-full bg-dark-900 border border-dark-600 rounded-xl py-3 pl-4 pr-20 text-sm text-white focus:border-blue-500 outline-none" placeholder="Descreva o cenário do cliente...">
+                    <button id="btnVoice" onclick="toggleVoiceInput()" class="absolute right-10 text-gray-400 hover:text-red-400 transition p-2 rounded-full" title="Falar">🎤</button>
+                    <button onclick="handleAiSubmit()" class="absolute right-2 bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-lg transition" title="Enviar"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg></button>
+                </div>
+                <div id="voiceStatus" class="text-[10px] text-red-400 mt-1 hidden text-center animate-pulse">Ouvindo... Fale agora.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. ESTADO GLOBAL E CONFIGURAÇÕES
+        // ==========================================
+        let currentUser = null;
+        let isAuthModeLogin = true;
+        let eventCart = [];
+        let contractCart = [];
+        let configServices = [
+            { id: 'recreacao', nome: 'Recreação', tipoCobranca: 'diaria', custoDiaria: 120, margemDiaria: 160 },
+            { id: 'babysitter', nome: 'Babysitter', tipoCobranca: 'hora', custoDiaria: 20, margemDiaria: 25 },
+            { id: 'evento', nome: 'Evento Especial', tipoCobranca: 'diaria', custoDiaria: 150, margemDiaria: 200 }
+        ];
+
+        function carregarConfiguracoes() { const saved = localStorage.getItem('zupi_config_services'); if(saved) { configServices = JSON.parse(saved); } }
+        carregarConfiguracoes();
+
+        const dbUrlBase = "https://firestore.googleapis.com/v1/projects/zumpi-preficacao/databases/(default)/documents";
+
+        function formatMoney(value) { return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+        function showToast(msg, type='success') {
+            const c = document.getElementById('toastContainer'); const t = document.createElement('div');
+            t.className = `toast-enter flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-sm font-medium border ${type==='success'?'bg-green-900/80 border-green-500/50 text-green-200':type==='error'?'bg-red-900/80 border-red-500/50 text-red-200':'bg-dark-800 border-dark-600 text-gray-200'} backdrop-blur-md`;
+            t.innerHTML = `<span>${type==='success'?'✅':type==='error'?'❌':'ℹ️'}</span> ${msg}`;
+            c.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(()=>t.remove(),300); }, 3000);
+        }
+
+        // ==========================================
+        // 2. SISTEMA DE LOGIN (OFFLINE + FIREBASE)
+        // ==========================================
+        function toggleAuthMode() {
+            isAuthModeLogin = !isAuthModeLogin;
+            document.getElementById('authTitle').innerText = isAuthModeLogin ? "Acesso Restrito" : "Criar Conta Local";
+            document.getElementById('authBtn').innerText = isAuthModeLogin ? "Entrar no Sistema" : "Cadastrar e Entrar";
+            document.getElementById('authToggleText').innerText = isAuthModeLogin ? "Não tem conta?" : "Já possui conta?";
+            document.getElementById('btnToggleAuth').innerText = isAuthModeLogin ? "Cadastre-se" : "Faça Login";
+            document.getElementById('registerNameGroup').classList.toggle('hidden', isAuthModeLogin);
+            document.getElementById('authError').classList.add('hidden');
+            const pwdInput = document.getElementById('authPassword');
+            if (isAuthModeLogin) { pwdInput.setAttribute('autocomplete', 'current-password'); } else { pwdInput.setAttribute('autocomplete', 'new-password'); }
+        }
+
+        function togglePasswordVisibility() { const pwd = document.getElementById('authPassword'); const eye = document.getElementById('eyeIcon'); if(pwd.type === 'password') { pwd.type = 'text'; eye.innerText = '🙈'; } else { pwd.type = 'password'; eye.innerText = '👁️'; } }
+
+        async function handleCustomAuth(e) {
+            e.preventDefault();
+            const username = document.getElementById('authUsername').value.trim().toLowerCase();
+            const pass = document.getElementById('authPassword').value;
+            const keepLogged = document.getElementById('authKeepLogged').checked;
+            const errorEl = document.getElementById('authError');
+            errorEl.classList.add('hidden');
+            if (!username || !pass) { errorEl.innerText = "Preencha todos os campos."; errorEl.classList.remove('hidden'); return; }
+
+            const passHash = sha256(pass);
+            let usersDB = JSON.parse(localStorage.getItem('zupi_users_db') || '{}');
+            const fbDocUrl = `${dbUrlBase}/custom_users/${username}`;
+
+            try {
+                if (isAuthModeLogin) {
+                    let fbUser = null;
+                    try { const res = await fetch(fbDocUrl); if(res.ok) { const d = await res.json(); fbUser = {name: d.fields.name.stringValue, hash: d.fields.hash.stringValue}; } } catch(err) {}
+                    
+                    if (fbUser && fbUser.hash === passHash) {
+                        usersDB[username] = fbUser; localStorage.setItem('zupi_users_db', JSON.stringify(usersDB));
+                        finalizeLogin(username, fbUser.name, keepLogged);
+                    } else if (usersDB[username] && usersDB[username].hash === passHash) {
+                        try { await fetch(fbDocUrl, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({fields:{name:{stringValue:usersDB[username].name},hash:{stringValue:usersDB[username].hash}}})}); } catch(err){}
+                        finalizeLogin(username, usersDB[username].name, keepLogged);
+                    } else { errorEl.innerText = "Usuário ou senha incorretos."; errorEl.classList.remove('hidden'); }
+                } else {
+                    const name = document.getElementById('authName').value.trim();
+                    if (!name) { errorEl.innerText = "Digite seu nome."; errorEl.classList.remove('hidden'); return; }
+                    let fbExists = false; try { const res = await fetch(fbDocUrl); fbExists = res.ok; } catch(err) {}
+                    if (fbExists || usersDB[username]) { errorEl.innerText = "Usuário já existe."; errorEl.classList.remove('hidden'); return; }
+                    
+                    usersDB[username] = { name: name, hash: passHash };
+                    localStorage.setItem('zupi_users_db', JSON.stringify(usersDB));
+                    try { await fetch(fbDocUrl, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({fields:{name:{stringValue:name},hash:{stringValue:passHash}}})}); } catch(err){}
+                    finalizeLogin(username, name, keepLogged);
+                }
+            } catch (err) { errorEl.innerText = "Erro ao processar."; errorEl.classList.remove('hidden'); }
+        }
+
+        function finalizeLogin(username, name, keepLogged) {
+            currentUser = { username, name };
+            if (keepLogged) localStorage.setItem('zupi_session', JSON.stringify(currentUser));
+            else sessionStorage.setItem('zupi_session', JSON.stringify(currentUser));
+            document.getElementById('loginModal').classList.add('hidden');
+            setLoggedInState();
+        }
+
+        function checkLocalAuth() { const saved = localStorage.getItem('zupi_session') || sessionStorage.getItem('zupi_session'); if (saved) { currentUser = JSON.parse(saved); setLoggedInState(); } else { document.getElementById('loginModal').classList.remove('hidden'); } }
+
+        function setLoggedInState() {
+            document.getElementById('userNameDisplay').innerText = currentUser.name.split(' ')[0];
+            document.getElementById('userAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
+            fetchBudgets();
+            if(eventCart.length===0) addServiceToEvent('recreacao');
+            if(contractCart.length===0) { addServiceToContract('recreacao', true, 5); calcularTotaisContrato(); }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => { el.classList.remove('border-blue-500', 'text-blue-400'); el.classList.add('text-gray-400'); el.classList.remove('border-b-2'); });
+            document.getElementById(tabId).classList.remove('hidden');
+            const btn = document.getElementById('btn-' + tabId);
+            btn.classList.add('border-blue-500', 'text-blue-400', 'border-b-2'); btn.classList.remove('text-gray-400');
+            if(tabId === 'tab-matriz') gerarMatriz();
+        }
+
+        // ==========================================
+        // 3. CONFIGURAÇÃO DE SERVIÇOS
+        // ==========================================
+        function openConfigModal() {
+            const list = document.getElementById('configServicesList'); list.innerHTML = '';
+            configServices.forEach(s => list.insertAdjacentHTML('beforeend', buildConfigRow(s)));
+            document.getElementById('configModal').classList.remove('hidden');
+        }
+        function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); }
+        
+        function buildConfigRow(s) {
+            return `
+            <div class="flex flex-col sm:flex-row items-center gap-2 bg-dark-800 p-2 rounded-lg border border-dark-600 config-row" data-id="${s.id}">
+                <input type="text" value="${s.nome}" class="w-full sm:w-1/3 bg-dark-900 border border-dark-700 rounded p-1.5 text-white text-xs c-nome" placeholder="Nome">
+                <select class="w-full sm:w-1/5 bg-dark-900 border border-dark-700 rounded p-1.5 text-white text-xs c-tipo">
+                    <option value="diaria" ${s.tipoCobranca==='diaria'?'selected':''}>Por Diária</option>
+                    <option value="hora" ${s.tipoCobranca==='hora'?'selected':''}>Por Hora</option>
+                </select>
+                <div class="w-full sm:w-2/5 flex gap-2">
+                    <input type="number" value="${s.custoDiaria}" class="w-1/2 bg-dark-900 border border-dark-700 rounded p-1.5 text-white text-xs c-custo" placeholder="Custo">
+                    <input type="number" value="${s.margemDiaria}" class="w-1/2 bg-dark-900 border border-dark-700 rounded p-1.5 text-white text-xs c-margem" placeholder="Margem">
+                </div>
+                <button onclick="this.parentElement.remove()" class="w-full sm:w-auto text-red-400 hover:text-red-300 p-1 bg-dark-900 sm:bg-transparent rounded">✖</button>
+            </div>`;
+        }
+        function addConfigServiceRow() { const id = 'serv_' + Date.now(); document.getElementById('configServicesList').insertAdjacentHTML('beforeend', buildConfigRow({id, nome:'Novo Serviço', tipoCobranca:'diaria', custoDiaria:100, margemDiaria:100})); }
+
+        function saveConfigServices() {
+            const rows = document.querySelectorAll('.config-row'); const newConf = [];
+            rows.forEach(r => { newConf.push({ id: r.dataset.id, nome: r.querySelector('.c-nome').value, tipoCobranca: r.querySelector('.c-tipo').value, custoDiaria: parseFloat(r.querySelector('.c-custo').value)||0, margemDiaria: parseFloat(r.querySelector('.c-margem').value)||0 }); });
+            configServices = newConf; localStorage.setItem('zupi_config_services', JSON.stringify(configServices));
+            
+            // Atualiza os carrinhos com os novos preços se o usuário alterar a configuração
+            eventCart.forEach(i => { const c = configServices.find(s=>s.id===i.servicoId); if(c) { i.custoBase = c.custoDiaria; i.margemBase = c.margemDiaria; } });
+            contractCart.forEach(i => { const c = configServices.find(s=>s.id===i.servicoId); if(c) { i.custoBase = c.custoDiaria; i.margemBase = c.margemDiaria; } });
+            
+            renderEventCart(); renderContractCart(); closeConfigModal(); showToast("Serviços atualizados.");
+        }
+        function generateServiceOptions(selectedId) { return configServices.map(s => `<option value="${s.id}" ${s.id===selectedId?'selected':''}>${s.nome}</option>`).join(''); }
+
+        // ==========================================
+        // 4. LÓGICA DE EVENTOS
+        // ==========================================
+        function addServiceToEvent(typeId = configServices[0].id) {
+            const conf = configServices.find(s => s.id === typeId) || configServices[0];
+            eventCart.push({ id: 'evt_' + Date.now(), servicoId: conf.id, tipoCobranca: conf.tipoCobranca, qtd: 1, custoBase: conf.custoDiaria, margemBase: conf.margemDiaria, horasPorDia: conf.tipoCobranca==='hora'?6:0, custoMaterial: 0, servicoDiferenciado: 0 });
+            renderEventCart();
+        }
+
+        function updateEventItem(id, field, val) {
+            const item = eventCart.find(i => i.id === id); if(!item) return;
+            if (field === 'servicoId') { const conf = configServices.find(s => s.id === val); if(conf) { item.servicoId = conf.id; item.tipoCobranca = conf.tipoCobranca; item.custoBase = conf.custoDiaria; item.margemBase = conf.margemDiaria; item.horasPorDia = conf.tipoCobranca==='hora'?6:0; } }
+            else { item[field] = parseFloat(val) || 0; }
+            renderEventCart();
+        }
+
+        function calcSubEvent(item, totalDays) {
+            let diárias = totalDays; let fCusto = item.custoBase, fMargem = item.margemBase;
+            if(item.tipoCobranca === 'hora') { fCusto = item.custoBase * item.horasPorDia; fMargem = item.margemBase * item.horasPorDia; }
+            const custoEquipe = item.qtd * diárias * fCusto; const margemEquipe = item.qtd * diárias * fMargem;
+            const custoEstrutura = item.custoMaterial + item.servicoDiferenciado; const fatTotal = custoEquipe + margemEquipe + custoEstrutura;
+            return { custoEquipe, margemEquipe, custoEstrutura, fatTotal };
+        }
+
+        function renderEventCart() {
+            const container = document.getElementById('eventCartContainer'); container.innerHTML = '';
+            const days = parseInt(document.getElementById('eventDays').value) || 1;
+            
+            eventCart.forEach((item, idx) => {
+                let sub = calcSubEvent(item, days); let isHora = item.tipoCobranca === 'hora';
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-dark-800 border border-dark-600 rounded-xl p-4 shadow-sm relative">
+                        ${eventCart.length > 1 ? `<button onclick="eventCart.splice(${idx},1); renderEventCart();" class="absolute top-2 right-2 text-red-400 hover:text-red-300 text-xs bg-dark-900 rounded px-2 py-1 z-10">Remover</button>` : ''}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                            <div class="flex gap-2 items-end"><div class="flex-grow"><label class="block text-xs text-gray-400 mb-1">Serviço</label><select onchange="updateEventItem('${item.id}', 'servicoId', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white outline-none focus:border-blue-500 text-sm">${generateServiceOptions(item.servicoId)}</select></div><button onclick="openConfigModal()" class="bg-dark-700 hover:bg-dark-600 border border-dark-500 rounded-lg p-2 text-gray-300 transition" title="Configurar Padrões">⚙️</button></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block text-xs text-gray-400 mb-1">Qtd Profissionais</label><input type="number" min="1" value="${item.qtd}" oninput="updateEventItem('${item.id}', 'qtd', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white text-center text-sm outline-none"></div>
+                                ${isHora ? `<div><label class="block text-xs text-gray-400 mb-1">Horas/Dia</label><input type="number" min="1" value="${item.horasPorDia}" oninput="updateEventItem('${item.id}', 'horasPorDia', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white text-center text-sm outline-none"></div>` : '<div></div>'}
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-dark-900/50 p-3 rounded-lg border border-dark-700/50">
+                            <div><label class="block text-[10px] text-gray-500 mb-1">Custo Base (${isHora?'/h':'/dia'})</label><input type="number" value="${item.custoBase}" oninput="updateEventItem('${item.id}', 'custoBase', this.value)" class="w-full bg-transparent border-b border-dark-600 text-red-300 text-sm outline-none font-medium p-1"></div>
+                            <div><label class="block text-[10px] text-gray-500 mb-1">Margem Base (${isHora?'/h':'/dia'})</label><input type="number" value="${item.margemBase}" oninput="updateEventItem('${item.id}', 'margemBase', this.value)" class="w-full bg-transparent border-b border-dark-600 text-green-300 text-sm outline-none font-medium p-1"></div>
+                            <div><label class="block text-[10px] text-gray-500 mb-1">Custo Material (Total)</label><input type="number" value="${item.custoMaterial}" oninput="updateEventItem('${item.id}', 'custoMaterial', this.value)" class="w-full bg-transparent border-b border-dark-600 text-orange-300 text-sm outline-none font-medium p-1"></div>
+                            <div><label class="block text-[10px] text-gray-500 mb-1">Extra/Diferenciado</label><input type="number" value="${item.servicoDiferenciado}" oninput="updateEventItem('${item.id}', 'servicoDiferenciado', this.value)" class="w-full bg-transparent border-b border-dark-600 text-orange-300 text-sm outline-none font-medium p-1"></div>
+                        </div>
+                        <div class="mt-3 flex justify-between items-center bg-dark-900 px-4 py-2 rounded-lg border border-dark-700">
+                            <span class="text-xs text-gray-400">Subtotal Serviço:</span><span class="text-sm font-bold text-white">${formatMoney(sub.fatTotal)}</span>
+                        </div>
+                    </div>
+                `);
+            });
+            calcularTotaisEvento();
+        }
+
+        function calcularTotaisEvento() {
+            let tQtd=0, tDiasTotal=0, tCusto=0, tMat=0, tMargem=0, tFat=0; const days = parseInt(document.getElementById('eventDays').value) || 1;
+            eventCart.forEach(i => { let s = calcSubEvent(i, days); tQtd += i.qtd; tDiasTotal += (i.qtd * days); tCusto += s.custoEquipe; tMat += s.custoEstrutura; tMargem += s.margemEquipe; tFat += s.fatTotal; });
+            document.getElementById('resQtdServicos').innerText = eventCart.length; document.getElementById('resEquipeTotal').innerText = tQtd + ' Profissionais'; document.getElementById('resDiariasTotal').innerText = tDiasTotal;
+            document.getElementById('resCustoEquipe').innerText = formatMoney(tCusto); document.getElementById('resCustoMat').innerText = formatMoney(tMat); document.getElementById('resMargemBruta').innerText = formatMoney(tMargem);
+            document.getElementById('resFaturamento').innerText = formatMoney(tFat);
+            let perc = tFat > 0 ? ((tMargem / tFat) * 100).toFixed(1) : 0; document.getElementById('resMargemPerc').innerText = perc + '%';
+        }
+
+        // ==========================================
+        // 5. LÓGICA DE CONTRATOS B2B
+        // ==========================================
+        function addServiceToContract(typeId = configServices[0].id, isDefault = false, initialQtd = 1) {
+            const conf = configServices.find(s => s.id === typeId) || configServices[0];
+            contractCart.push({ id: 'ctrt_' + Date.now() + Math.random(), servicoId: conf.id, tipoCobranca: conf.tipoCobranca, qtd: initialQtd, diasPorCiclo: 4, custoBase: conf.custoDiaria, margemBase: conf.margemDiaria, horasPorDia: conf.tipoCobranca==='hora'?6:0, custoMaterial: 0, servicoDiferenciado: 0 });
+            if(!isDefault) renderContractCart();
+        }
+
+        function updateContractItem(id, field, val) {
+            const item = contractCart.find(i => i.id === id); if(!item) return;
+            if (field === 'servicoId') { const conf = configServices.find(s => s.id === val); if(conf) { item.servicoId = conf.id; item.tipoCobranca = conf.tipoCobranca; item.custoBase = conf.custoDiaria; item.margemBase = conf.margemDiaria; item.horasPorDia = conf.tipoCobranca==='hora'?6:0; } }
+            else { item[field] = parseFloat(val) || 0; }
+            renderContractCart();
+        }
+
+        function calcSubContract(item) {
+            let fCusto = item.custoBase, fMargem = item.margemBase;
+            if(item.tipoCobranca === 'hora') { fCusto = item.custoBase * item.horasPorDia; fMargem = item.margemBase * item.horasPorDia; }
+            const unitCustoMensal = fCusto * item.diasPorCiclo, unitMargemMensal = fMargem * item.diasPorCiclo;
+            const custoEquipe = item.qtd * unitCustoMensal, margemEquipe = item.qtd * unitMargemMensal;
+            const custoEstrutura = item.custoMaterial + item.servicoDiferenciado; const fatTotal = custoEquipe + margemEquipe + custoEstrutura;
+            return { unitCustoMensal, unitMargemMensal, custoEquipe, margemEquipe, custoEstrutura, fatTotal };
+        }
+
+        function renderContractCart() {
+            const container = document.getElementById('contractCartContainer'); container.innerHTML = '';
+            if (contractCart.length === 0) { container.innerHTML = `<div class="text-center text-gray-500 py-10 border-2 border-dashed border-dark-600 rounded-2xl bg-dark-900/30">Nenhum serviço atrelado ao contrato.</div>`; calcularTotaisContrato(); return; }
+            
+            const unitVal = document.getElementById('contractUnit').value || 'Ciclo';
+
+            contractCart.forEach((item, idx) => {
+                let sub = calcSubContract(item); let isHora = item.tipoCobranca === 'hora';
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-dark-800 border border-dark-600 rounded-xl p-1 shadow-sm relative flex flex-col sm:flex-row">
+                        ${contractCart.length > 1 ? `<button onclick="contractCart.splice(${idx},1); renderContractCart();" class="absolute top-2 right-2 text-red-400 hover:text-red-300 text-xs bg-dark-900 rounded px-2 py-1 z-10">Remover</button>` : ''}
+                        
+                        <div class="sm:w-1/3 p-3 border-b sm:border-b-0 sm:border-r border-dark-700">
+                            <div class="flex gap-2 items-end mb-2"><div class="flex-grow"><label class="block text-[10px] text-gray-400 mb-1">Serviço/Cargo</label><select onchange="updateContractItem('${item.id}', 'servicoId', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-1.5 text-white outline-none focus:border-blue-500 text-xs">${generateServiceOptions(item.servicoId)}</select></div><button onclick="openConfigModal()" class="bg-dark-700 hover:bg-dark-600 border border-dark-500 rounded p-1.5 text-gray-300" title="Configurar">⚙️</button></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-[10px] text-gray-400 mb-1">Profissionais (Qtd)</label><input type="number" min="1" value="${item.qtd}" oninput="updateContractItem('${item.id}', 'qtd', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-white outline-none focus:border-blue-500 text-center font-bold text-sm"></div>
+                                <div><label class="block text-[10px] text-gray-400 mb-1" title="Ex: Quantos dias atuarão">Dias (Por ${unitVal})</label><input type="number" min="1" value="${item.diasPorCiclo}" oninput="updateContractItem('${item.id}', 'diasPorCiclo', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-white outline-none focus:border-blue-500 text-center font-bold text-sm"></div>
+                            </div>
+                            ${isHora ? `<div><label class="block text-[10px] text-gray-400 mb-1">Horas por Dia</label><input type="number" min="1" value="${item.horasPorDia}" oninput="updateContractItem('${item.id}', 'horasPorDia', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-white outline-none focus:border-blue-500 text-center font-bold text-sm"></div>` : ''}
+                            <div class="grid grid-cols-2 gap-3 mt-2">
+                                <div><label class="block text-[9px] text-gray-500">Custo (Unit/Dia)</label><input type="number" value="${item.custoBase}" oninput="updateContractItem('${item.id}', 'custoBase', this.value)" class="w-full bg-transparent border-b border-dark-600 text-red-300 text-xs outline-none p-1"></div>
+                                <div><label class="block text-[9px] text-gray-500">Margem (Unit/Dia)</label><input type="number" value="${item.margemBase}" oninput="updateContractItem('${item.id}', 'margemBase', this.value)" class="w-full bg-transparent border-b border-dark-600 text-green-300 text-xs outline-none p-1"></div>
+                            </div>
+                        </div>
+
+                        <div class="sm:w-1/3 p-3 border-b sm:border-b-0 sm:border-r border-dark-700 bg-dark-900/30">
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Custos Extras</h4>
+                            <div class="space-y-3">
+                                <div><label class="block text-[10px] text-gray-400 mb-1">Material de Apoio (Total)</label><input type="number" value="${item.custoMaterial}" oninput="updateContractItem('${item.id}', 'custoMaterial', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-orange-300 outline-none focus:border-blue-500 text-sm"></div>
+                                <div><label class="block text-[10px] text-gray-400 mb-1">Serviço Diferenciado / Taxas</label><input type="number" value="${item.servicoDiferenciado}" oninput="updateContractItem('${item.id}', 'servicoDiferenciado', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded-lg p-2 text-orange-300 outline-none focus:border-blue-500 text-sm"></div>
+                            </div>
+                        </div>
+
+                        <div class="sm:w-1/3 bg-dark-900 rounded-xl p-4 border border-dark-700 flex flex-col justify-center shadow-inner">
+                            <h4 class="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-dark-600 pb-1 mb-2">3. Subtotal do Serviço</h4>
+                            <div class="flex justify-between items-center text-xs sm:text-sm mb-1"><span class="text-gray-500">Equipe (Custo+Margem):</span><span class="text-gray-300 font-bold">${formatMoney(sub.custoEquipe + sub.margemEquipe)}</span></div>
+                            <div class="flex justify-between items-center text-xs sm:text-sm mb-3"><span class="text-gray-500">Adicionais (Global):</span><span class="text-gray-300 font-bold">${formatMoney(sub.custoEstrutura)}</span></div>
+                            <div class="mt-auto pt-3 border-t border-dark-700">
+                                <span class="block text-[10px] sm:text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">Valor Final (Por ${unitVal})</span>
+                                <span class="block text-xl sm:text-2xl font-black text-white truncate">${formatMoney(sub.fatTotal)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+            calcularTotaisContrato();
+        }
+
+        window.calcularTotaisContrato = function() {
+            let tQtd=0, tCusto=0, tMat=0, tMargem=0, tFat=0;
+            const duracao = parseInt(document.getElementById('contractDuration').value)||1;
+            const unit = document.getElementById('contractUnit').value || 'Ciclo';
+            
+            let unStr = unit;
+            if(unit.toLowerCase().startsWith('mês') || unit.toLowerCase().startsWith('mes')) unStr = 'Mensal';
+            else if(unit.toLowerCase().startsWith('semana')) unStr = 'Semanal';
+            else if(unit.toLowerCase().startsWith('ano')) unStr = 'Anual';
+            else if(unit.toLowerCase().startsWith('dia')) unStr = 'Diário';
+            else unStr = 'Por ' + unit;
+            
+            document.getElementById('labelFaturamentoCiclo').innerText = `Faturamento (${unStr})`;
+            document.getElementById('labelValorGlobal').innerText = `Valor Global Fechado (${duracao} ${unit})`;
+            document.getElementById('lblSubTotalTitle').innerText = `Subtotais (${unStr})`;
+
+            contractCart.forEach(i => { let s = calcSubContract(i); tQtd += i.qtd; tCusto += s.custoEquipe; tMat += i.custoMaterial + i.servicoDiferenciado; tMargem += s.margemEquipe; tFat += s.fatTotal; });
+            
+            document.getElementById('contractEquipeTotal').innerText = tQtd + ' Profissionais';
+            document.getElementById('contractCustoEquipe').innerText = formatMoney(tCusto); document.getElementById('contractCustoMat').innerText = formatMoney(tMat);
+            document.getElementById('contractLucro').innerText = formatMoney(tMargem); document.getElementById('contractFatMensal').innerText = formatMoney(tFat);
+            document.getElementById('contractFatGlobal').innerText = formatMoney(tFat * duracao);
+            let perc = tFat > 0 ? ((tMargem / tFat) * 100).toFixed(1) : 0; document.getElementById('contractMargemPerc').innerText = perc + '%';
+        }
+
+        // ==========================================
+        // 6. MATRIZ E SALVAMENTO NUVEM
+        // ==========================================
+        function gerarMatriz() {
+            const maxP = parseInt(document.getElementById('matrizMaxProf').value)||10; const maxD = parseInt(document.getElementById('matrizMaxDias').value)||7;
+            const bCusto = parseFloat(document.getElementById('matrizCusto').value)||120; const bMargem = parseFloat(document.getElementById('matrizMargem').value)||160;
+            const thead = document.getElementById('matrizHead'); const tbody = document.getElementById('matrizBody');
+            
+            let headHTML = '<tr><th class="p-3">Prof. \\ Dias</th>';
+            for(let d=1; d<=Math.min(maxD,30); d++) headHTML += `<th class="p-3 text-center">${d}d</th>`;
+            headHTML += '</tr>'; thead.innerHTML = headHTML;
+            
+            let bodyHTML = '';
+            for(let p=1; p<=Math.min(maxP,100); p++) {
+                bodyHTML += `<tr class="hover:bg-dark-800 transition"><td class="p-3 font-bold text-gray-300 border-r border-dark-700">${p}</td>`;
+                for(let d=1; d<=Math.min(maxD,30); d++) {
+                    const final = (p * d * bCusto) + (p * d * bMargem);
+                    bodyHTML += `<td class="p-3 text-center text-blue-400 font-medium cursor-pointer hover:bg-dark-700" title="Custo: ${formatMoney(p*d*bCusto)} | Margem: ${formatMoney(p*d*bMargem)}">${formatMoney(final)}</td>`;
+                }
+                bodyHTML += '</tr>';
+            }
+            tbody.innerHTML = bodyHTML;
+        }
+
+        async function salvarOrcamento(tipo) {
+            if(!currentUser) { showToast("Faça login.", "error"); return; }
+            const client = tipo === 'evento' ? document.getElementById('clientName').value : document.getElementById('contractClientName').value;
+            if(!client) { showToast("Digite o nome do cliente.", "error"); return; }
+            
+            let dur, fatMensal, fatGlobal, cartSave;
+            if(tipo === 'evento') { dur = document.getElementById('eventDays').value; fatGlobal = parseFloat(document.getElementById('resFaturamento').innerText.replace(/[R$\s.]/g,'').replace(',','.')); cartSave = eventCart; }
+            else { dur = document.getElementById('contractDuration').value; fatMensal = parseFloat(document.getElementById('contractFatMensal').innerText.replace(/[R$\s.]/g,'').replace(',','.')); fatGlobal = parseFloat(document.getElementById('contractFatGlobal').innerText.replace(/[R$\s.]/g,'').replace(',','.')); cartSave = contractCart; }
+
+            const uid = Date.now().toString();
+            const data = { id: uid, tipo: tipo, data: new Date().toISOString(), cliente: client, duracao: dur, cart: cartSave, valorFinal: fatGlobal };
+            if(tipo === 'contrato') data.fatMensal = fatMensal;
+
+            let salvos = JSON.parse(localStorage.getItem(`zupi_orcamentos_${currentUser.username}`) || '[]');
+            salvos.push(data); localStorage.setItem(`zupi_orcamentos_${currentUser.username}`, JSON.stringify(salvos));
+            showToast("Salvo localmente.");
+
+            try { await fetch(`${dbUrlBase}/custom_users/${currentUser.username}/budgets/${uid}`, {method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({fields:{dataString:{stringValue:JSON.stringify(data)}}})}); showToast("Sincronizado na Nuvem!"); } catch(e) {}
+            fetchBudgets();
+        }
+
+        async function fetchBudgets() {
+            if(!currentUser) return;
+            const container = document.getElementById('savedBudgetsList');
+            let salvos = JSON.parse(localStorage.getItem(`zupi_orcamentos_${currentUser.username}`) || '[]');
+            
+            try { const res = await fetch(`https://firestore.googleapis.com/v1/projects/zumpi-preficacao/databases/(default)/documents/custom_users/${currentUser.username}/budgets`); if(res.ok) { const data = await res.json(); if(data.documents) { salvos = data.documents.map(d => JSON.parse(d.fields.dataString.stringValue)); localStorage.setItem(`zupi_orcamentos_${currentUser.username}`, JSON.stringify(salvos)); } } } catch(e) {}
+
+            container.innerHTML = '';
+            if(salvos.length === 0) { container.innerHTML = '<div class="text-gray-500 text-sm text-center col-span-full py-10">Nenhum salvo.</div>'; return; }
+            
+            salvos.sort((a,b)=>new Date(b.data)-new Date(a.data)).forEach(orc => {
+                const isEv = orc.tipo === 'evento'; const tagColor = isEv ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30';
+                container.insertAdjacentHTML('beforeend', `
+                    <div class="bg-dark-800 border border-dark-600 rounded-xl p-4 flex flex-col justify-between hover:border-blue-500/50 transition">
+                        <div>
+                            <div class="flex justify-between items-start mb-2"><span class="text-xs px-2 py-0.5 rounded border ${tagColor}">${isEv ? 'Pacote' : 'Contrato'}</span><span class="text-[10px] text-gray-500">${new Date(orc.data).toLocaleDateString('pt-BR')}</span></div>
+                            <h4 class="font-bold text-white text-sm mb-1 truncate">${orc.cliente}</h4>
+                            <p class="text-xs text-gray-400 mb-3">${isEv ? orc.duracao + ' Dias' : orc.duracao + ' Meses'}</p>
+                            <div class="text-lg font-black text-transparent bg-clip-text accent-gradient mb-4">${formatMoney(orc.valorFinal)} ${!isEv?'(Global)':''}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-auto">
+                            <button onclick="carregarOrcamento('${orc.id}')" class="bg-dark-700 hover:bg-dark-600 text-white text-xs py-2 rounded transition">Abrir</button>
+                            <button onclick="excluirOrcamento('${orc.id}')" class="bg-red-900/30 text-red-400 hover:bg-red-900/50 text-xs py-2 rounded transition">Excluir</button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        window.carregarOrcamento = function(id) {
+            const salvos = JSON.parse(localStorage.getItem(`zupi_orcamentos_${currentUser.username}`) || '[]');
+            const orc = salvos.find(o => o.id === id); if(!orc) return;
+            if(orc.tipo === 'evento') { document.getElementById('clientName').value = orc.cliente; document.getElementById('eventDays').value = orc.duracao; eventCart = orc.cart || []; renderEventCart(); switchTab('tab-calc'); }
+            else { document.getElementById('contractClientName').value = orc.cliente; document.getElementById('contractDuration').value = orc.duracao; contractCart = orc.cart || []; renderContractCart(); switchTab('tab-contratos'); }
+            showToast("Orçamento carregado.");
+        }
+
+        window.excluirOrcamento = async function(id) {
+            let salvos = JSON.parse(localStorage.getItem(`zupi_orcamentos_${currentUser.username}`) || '[]'); salvos = salvos.filter(o => o.id !== id); localStorage.setItem(`zupi_orcamentos_${currentUser.username}`, JSON.stringify(salvos));
+            try { await fetch(`${dbUrlBase}/custom_users/${currentUser.username}/budgets/${id}`, {method: 'DELETE'}); } catch(e){} fetchBudgets(); showToast("Excluído.");
+        }
+        
+        window.limparTodosOrcamentos = async function() {
+            if(confirm("Apagar TUDO?")) {
+                let salvos = JSON.parse(localStorage.getItem(`zupi_orcamentos_${currentUser.username}`) || '[]'); localStorage.setItem(`zupi_orcamentos_${currentUser.username}`, '[]');
+                salvos.forEach(async o => { try { await fetch(`${dbUrlBase}/custom_users/${currentUser.username}/budgets/${o.id}`, {method: 'DELETE'}); } catch(e){} });
+                fetchBudgets(); showToast("Histórico limpo.");
+            }
+        }
+
+        // ==========================================
+        // 7. GERADOR DE PDF (HTML2PDF SEGURO OFFLINE)
+        // ==========================================
+        function openPrintModal(tipo) {
+            document.getElementById('printModal').classList.remove('hidden');
+            const dateStr = new Date().toLocaleDateString('pt-BR'); document.getElementById('printDate').innerText = `Data: ${dateStr}`;
+            const list = document.getElementById('printServicesList'); list.innerHTML = '';
+            
+            if(tipo === 'evento') {
+                document.getElementById('printTypeTitle').innerText = "Proposta de Evento";
+                document.getElementById('printClientName').innerText = document.getElementById('clientName').value || 'Cliente não informado';
+                document.getElementById('printDurationDetails').innerText = `Duração Total: ${document.getElementById('eventDays').value} Dias`; document.getElementById('printDurationDetails').classList.remove('hidden');
+                document.getElementById('printTableHeader').innerHTML = '<th class="p-4 border border-gray-200">Serviço Adquirido</th><th class="p-4 border border-gray-200 text-center">Profissionais</th><th class="p-4 border border-gray-200 text-right">Subtotal</th>';
+                document.getElementById('printEventTotals').classList.remove('hidden'); document.getElementById('printContractTotals').classList.add('hidden');
+                
+                const days = document.getElementById('eventDays').value;
+                eventCart.forEach(i => { let s = calcSubEvent(i, days); list.insertAdjacentHTML('beforeend', `<tr><td class="p-4 border border-gray-200 font-medium">${configServices.find(c=>c.id===i.servicoId)?.nome||'Serviço'}</td><td class="p-4 border border-gray-200 text-center text-gray-600">${i.qtd}x</td><td class="p-4 border border-gray-200 text-right text-gray-800 font-bold">${formatMoney(s.fatTotal - s.custoEstrutura)}</td></tr>`); });
+                let vF = eventCart.reduce((a,c) => a+calcSubEvent(c, days).fatTotal, 0), tM = eventCart.reduce((a,c)=>a+c.custoMaterial+c.servicoDiferenciado,0);
+                document.getElementById('printTotalServicos').innerText = formatMoney(vF - tM); document.getElementById('printTotalExtras').innerText = formatMoney(tM); document.getElementById('printValorFinal').innerText = formatMoney(vF);
+            } else {
+                const dur = document.getElementById('contractDuration').value, un = document.getElementById('contractUnit').value || 'Ciclo';
+                let unStr = un; if(un.toLowerCase().startsWith('mês') || un.toLowerCase().startsWith('mes')) unStr = 'Mensal'; else if(un.toLowerCase().startsWith('semana')) unStr = 'Semanal'; else if(un.toLowerCase().startsWith('ano')) unStr = 'Anual'; else if(un.toLowerCase().startsWith('dia')) unStr = 'Diário'; else unStr = 'Por ' + un;
+                
+                document.getElementById('printTypeTitle').innerText = "Proposta Corporativa";
+                document.getElementById('printClientName').innerText = document.getElementById('contractClientName').value || 'Empresa Contratante';
+                document.getElementById('printDurationDetails').innerText = `Duração do Contrato: ${dur} ${un}`; document.getElementById('printDurationDetails').classList.remove('hidden');
+                document.getElementById('printTableHeader').innerHTML = '<th class="p-4 border border-gray-200">Serviço / Equipe</th><th class="p-4 border border-gray-200 text-center">Tamanho da Equipe</th><th class="p-4 border border-gray-200 text-right">Investimento ('+unStr+')</th>';
+                document.getElementById('printEventTotals').classList.add('hidden'); document.getElementById('printContractTotals').classList.remove('hidden');
+                
+                document.getElementById('printContractCycleLabel').innerText = `Faturamento (${unStr})`;
+                document.getElementById('printContractDurationSub').innerText = `Contrato fechado por ${dur} ${un}`;
+
+                let fatTotal = 0;
+                contractCart.forEach(i => {
+                    let s = calcSubContract(i); fatTotal += s.fatTotal;
+                    list.insertAdjacentHTML('beforeend', `<tr><td class="p-4 border border-gray-200 font-medium"><div class="text-gray-800">${configServices.find(c=>c.id===i.servicoId)?.nome||'Serviço'}</div><div class="text-[10px] text-gray-500 font-normal">Atuação: ${i.diasPorCiclo} dias/${unStr.toLowerCase()}</div></td><td class="p-4 border border-gray-200 text-center text-gray-600">${i.qtd} Prof.</td><td class="p-4 border border-gray-200 text-right text-gray-800 font-bold">${formatMoney(s.fatTotal)}</td></tr>`);
+                });
+                document.getElementById('printFatMensal').innerText = formatMoney(fatTotal); document.getElementById('printFatGlobal').innerText = formatMoney(fatTotal * dur);
+            }
+        }
+        function closePrintModal() { document.getElementById('printModal').classList.add('hidden'); }
+        
+        function downloadPDF() {
+            showToast("Gerando PDF Seguro...");
+            const element = document.getElementById('pdfContent');
+            const opt = { margin: 0, filename: `Proposta_ZUPI_${Date.now()}.pdf`, image: { type: 'jpeg', quality: 1 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).outputPdf().then(function(pdfBase64) { const a = document.createElement('a'); a.href = 'data:application/pdf;base64,' + btoa(pdfBase64); a.download = opt.filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); showToast("Download concluído!"); });
+        }
+
+        // ==========================================
+        // 8. INTELIGÊNCIA ARTIFICIAL + VOZ + HISTÓRICO
+        // ==========================================
+        let aiHistory = []; let isAiTyping = false; let recognition; let isListening = false;
+        const AI_SYSTEM_PROMPT = `Você é a IA da ZUPI, consultora de precificação. 
+Regras:
+1. Chame o usuário pelo nome.
+2. NUNCA dê o preço final de cara. Pergunte: evento ou contrato? Horas? Material extra? Babysitter?
+3. Se o usuário quiser criar o orçamento, use os comandos ocultos na sua resposta: [ADD_SERVICO_EVENTO], [ADD_SERVICO_CONTRATO], [ABA_EVENTO], [ABA_CONTRATO]. Ao mandar isso, o botão será clicado.`;
+
+        function toggleAiModal() { const m = document.getElementById('aiModal'); const c = document.getElementById('aiModalContent'); if(m.classList.contains('hidden')) { m.classList.remove('hidden'); setTimeout(()=>c.classList.remove('translate-y-full'), 10); loadAiHistory(); if(aiHistory.length===0) { appendAiMessage(`Olá, ${currentUser?currentUser.name.split(' ')[0]:'parceiro'}! Sou sua assistente. Como posso te ajudar a precificar hoje?`, 'ai'); } } else { c.classList.add('translate-y-full'); setTimeout(()=>m.classList.add('hidden'), 300); } }
+        
+        window.toggleAiHistoryPanel = function() { const panel = document.getElementById('aiHistoryPanel'); if (panel) { if (panel.classList.contains('-translate-x-full')) { panel.classList.remove('-translate-x-full'); renderAiHistoryList(); } else { panel.classList.add('-translate-x-full'); } } };
+        
+        function saveAiSession() { if(aiHistory.length>1) { let sessions = JSON.parse(localStorage.getItem(`zupi_ai_sessions_${currentUser?.username}`) || '[]'); const session = { id: Date.now(), preview: aiHistory[1].text.substring(0, 30) + '...', date: new Date().toISOString(), messages: [...aiHistory] }; sessions.unshift(session); localStorage.setItem(`zupi_ai_sessions_${currentUser?.username}`, JSON.stringify(sessions.slice(0,20))); } }
+        
+        function renderAiHistoryList() { const list = document.getElementById('aiHistoryList'); let sessions = JSON.parse(localStorage.getItem(`zupi_ai_sessions_${currentUser?.username}`) || '[]'); list.innerHTML = ''; if(sessions.length===0) { list.innerHTML = '<div class="text-xs text-gray-500 text-center py-4">Sem histórico.</div>'; return; } sessions.forEach(s => { list.insertAdjacentHTML('beforeend', `<div onclick="loadAiSession(${s.id})" class="p-2 bg-dark-900 border border-dark-700 rounded cursor-pointer hover:border-blue-500 transition"><div class="text-[10px] text-gray-500 mb-1">${new Date(s.date).toLocaleDateString('pt-BR')}</div><div class="text-xs text-gray-300 truncate">${s.preview}</div></div>`); }); }
+        
+        window.loadAiSession = function(id) { let sessions = JSON.parse(localStorage.getItem(`zupi_ai_sessions_${currentUser?.username}`) || '[]'); const session = sessions.find(s=>s.id===id); if(session) { aiHistory = session.messages; document.getElementById('aiChatBox').innerHTML=''; aiHistory.forEach(m => { const el = document.createElement('div'); el.className = `flex ${m.sender==='user'?'justify-end':'justify-start'} mb-4`; el.innerHTML = `<div class="max-w-[85%] rounded-2xl p-3 text-sm ${m.sender==='user'?'bg-blue-600 text-white rounded-br-none':'bg-dark-800 text-gray-200 border border-dark-600 rounded-bl-none shadow-lg'}">${m.text.replace(/\n/g, '<br>')}</div>`; document.getElementById('aiChatBox').appendChild(el); }); toggleAiHistoryPanel(); } }
+        
+        window.clearAllAiHistory = function() { localStorage.removeItem(`zupi_ai_sessions_${currentUser?.username}`); renderAiHistoryList(); aiHistory=[]; document.getElementById('aiChatBox').innerHTML=''; showToast("Histórico limpo"); toggleAiHistoryPanel(); toggleAiModal(); }
+        window.startNewAiSession = function() { saveAiSession(); aiHistory = []; document.getElementById('aiChatBox').innerHTML = ''; appendAiMessage(`Iniciando nova conversa limpa. Em que posso te ajudar, ${currentUser?currentUser.name.split(' ')[0]:''}?`, 'ai'); }
+        
+        function setupVoice() { if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return; const SReg = window.SpeechRecognition || window.webkitSpeechRecognition; recognition = new SReg(); recognition.continuous = false; recognition.interimResults = true; recognition.lang = 'pt-BR'; recognition.onstart = () => { isListening = true; document.getElementById('btnVoice').classList.replace('text-gray-400', 'text-red-500'); document.getElementById('voiceStatus').classList.remove('hidden'); }; recognition.onresult = (e) => { let final = ''; for(let i=e.resultIndex; i<e.results.length; i++) { if(e.results[i].isFinal) final += e.results[i][0].transcript; } if(final) { document.getElementById('aiInput').value += final + ' '; toggleVoiceInput(); } }; recognition.onerror = (e) => { toggleVoiceInput(); }; recognition.onend = () => { if(isListening) toggleVoiceInput(); }; }
+        setupVoice();
+        window.toggleVoiceInput = function() { if(!recognition) { showToast("Voz não suportada neste navegador.", "error"); return; } if(isListening) { recognition.stop(); isListening = false; document.getElementById('btnVoice').classList.replace('text-red-500', 'text-gray-400'); document.getElementById('voiceStatus').classList.add('hidden'); } else { recognition.start(); } }
+
+        function appendAiMessage(text, sender) {
+            const chatBox = document.getElementById('aiChatBox'); const msgDiv = document.createElement('div'); msgDiv.className = `flex ${sender==='user'?'justify-end':'justify-start'} mb-4 opacity-0 transition-opacity duration-300`;
+            const inner = document.createElement('div'); inner.className = `max-w-[85%] rounded-2xl p-3 text-sm ${sender==='user'?'bg-blue-600 text-white rounded-br-none':'bg-dark-800 text-gray-200 border border-dark-600 rounded-bl-none shadow-lg'}`;
+            msgDiv.appendChild(inner); chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
+            requestAnimationFrame(() => msgDiv.classList.remove('opacity-0'));
+            
+            if(sender==='user') { inner.innerText = text; aiHistory.push({sender:'user', text}); return; }
+            
+            isAiTyping = true;
+            let processText = text.replace(/\[ADD_SERVICO_EVENTO\]/g, () => { switchTab('tab-calc'); addServiceToEvent(); return '✅ *Adicionado à aba Pacotes*'; }).replace(/\[ADD_SERVICO_CONTRATO\]/g, () => { switchTab('tab-contratos'); addServiceToContract(); return '✅ *Adicionado à aba Contratos*'; }).replace(/\[ABA_EVENTO\]/g, () => { switchTab('tab-calc'); return ''; }).replace(/\[ABA_CONTRATO\]/g, () => { switchTab('tab-contratos'); return ''; });
+            
+            let i = 0; inner.innerHTML = '';
+            const interval = setInterval(() => {
+                if(i < processText.length) { inner.innerHTML = processText.substring(0, i+1).replace(/\n/g, '<br>'); chatBox.scrollTop = chatBox.scrollHeight; i++; }
+                else { clearInterval(interval); isAiTyping = false; aiHistory.push({sender:'ai', text}); saveAiSession(); }
+            }, 10);
+        }
+
+        async function handleAiSubmit() {
+            if (isAiTyping) return;
+            const input = document.getElementById('aiInput'); const text = input.value.trim(); if (!text) return;
+            input.value = ''; appendAiMessage(text, 'user');
+            
+            const typingDiv = document.createElement('div'); typingDiv.id = 'aiTyping'; typingDiv.className = 'flex justify-start mb-4'; typingDiv.innerHTML = `<div class="bg-dark-800 border border-dark-600 rounded-2xl rounded-bl-none p-3 shadow-lg typing-indicator"><span></span><span></span><span></span></div>`;
+            document.getElementById('aiChatBox').appendChild(typingDiv); document.getElementById('aiChatBox').scrollTop = document.getElementById('aiChatBox').scrollHeight;
+
+            const context = `[INVISÍVEL_TELA] NomeUsuário:${currentUser?.name||'N/A'}. Evento: ${eventCart.length} serv, Custo:${document.getElementById('resCustoEquipe').innerText}. Contrato: ${contractCart.length} serv, Custo:${document.getElementById('contractCustoEquipe').innerText}.`;
+
+            try {
+                const res = await fetch("https://backend-ia-v2.vercel.app/api/ide-chat", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: text + " " + context, systemInstruction: AI_SYSTEM_PROMPT, history: aiHistory.map(h => ({ role: h.sender==='user'?'USER':'CHATBOT', message: h.text })) })
+                });
+                typingDiv.remove();
+                if (res.ok) { const data = await res.json(); appendAiMessage(data.text, 'ai'); }
+                else { appendAiMessage("Erro de conexão.", 'ai'); }
+            } catch (err) { typingDiv.remove(); appendAiMessage("Falha no servidor.", 'ai'); }
+        }
+
+        document.getElementById('aiInput').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleAiSubmit(); });
+        document.addEventListener('DOMContentLoaded', function() { checkLocalAuth(); });
+    </script>
+</body>
+</html>
