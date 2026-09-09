@@ -1119,13 +1119,73 @@
         }
 
         window.simularDesconto = function(tipo, silent=false) {
-            let inputId = tipo === 'evt' ? 'evtSimuladorPreco' : 'ctrSimuladorPreco'; let resId = tipo === 'evt' ? 'evtSimuladorResultado' : 'ctrSimuladorResultado'; let novoPreco = parseFloat(document.getElementById(inputId).value); const container = document.getElementById(resId);
+            let inputId = tipo === 'evt' ? 'evtSimuladorPreco' : 'ctrSimuladorPreco'; 
+            let resId = tipo === 'evt' ? 'evtSimuladorResultado' : 'ctrSimuladorResultado'; 
+            let novoPreco = parseFloat(document.getElementById(inputId).value); 
+            const container = document.getElementById(resId);
+            
             if(!novoPreco || isNaN(novoPreco)) { container.classList.add('hidden'); return; }
+            
             let custoAtual = 0;
-            if(tipo === 'evt') { const days = parseFloat(document.getElementById('eventDays').value) || 0; let useMat = document.getElementById('evtUseMaterial').checked; let diasMat = parseFloat(document.getElementById('evtMatDias').value) || 0; custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; window.eventCart.forEach(i => { let s = calcSubEvent(i, days); custoAtual += s.custoEquipe + s.custoEstrutura; }); let hCount = document.getElementById('evtChargeHolidays').checked ? (parseInt(document.getElementById('evtHolidayCountHidden').value)||0) : 0; if(hCount>0) { window.eventCart.forEach(i => { custoAtual += (parseFloat(i.qtd)||0) * (parseFloat(i.custoBase)||0) * (i.tipoCobranca==='hora'?(parseFloat(i.horasPorDia)||0):1) * hCount; }); } } 
-            else { let useMat = document.getElementById('ctrUseMaterial').checked; let diasMat = parseFloat(document.getElementById('ctrMatDias').value) || 0; custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; window.contractCart.forEach(i => { let s = calcSubContract(i); custoAtual += s.custoEquipe + (parseFloat(i.custoMaterial)||0) + (parseFloat(i.servicoDiferenciado)||0); }); }
-            let novoLucro = novoPreco - custoAtual; let novaMargem = novoPreco > 0 ? (novoLucro / novoPreco) * 100 : 0;
-            container.classList.remove('hidden'); let corMsg = novaMargem >= 20 ? 'text-blue-300' : 'text-red-400 font-bold'; let aviso = novaMargem < 20 ? '<br>⚠️ Atenção: A margem ficará perigosamente baixa!' : ''; container.innerHTML = `<span class="${corMsg}">Lucro Projetado: ${formatMoney(novoLucro)} (Margem: ${novaMargem.toFixed(1)}%)${aviso}</span>`;
+            let precoOriginal = 0;
+            let lucroOriginal = 0;
+            let clientName = "";
+
+            if(tipo === 'evt') { 
+                clientName = document.getElementById('clientName').value || 'Cliente Não Informado';
+                precoOriginal = parseFloat(document.getElementById('resFaturamento').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
+                lucroOriginal = parseFloat(document.getElementById('resMargemBruta').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
+                
+                const days = parseFloat(document.getElementById('eventDays').value) || 0; 
+                let useMat = document.getElementById('evtUseMaterial').checked; 
+                let diasMat = parseFloat(document.getElementById('evtMatDias').value) || 0; 
+                custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; 
+                window.eventCart.forEach(i => { let s = calcSubEvent(i, days); custoAtual += s.custoEquipe + s.custoEstrutura; }); 
+                let hCount = document.getElementById('evtChargeHolidays').checked ? (parseInt(document.getElementById('evtHolidayCountHidden').value)||0) : 0; 
+                if(hCount>0) { window.eventCart.forEach(i => { custoAtual += (parseFloat(i.qtd)||0) * (parseFloat(i.custoBase)||0) * (i.tipoCobranca==='hora'?(parseFloat(i.horasPorDia)||0):1) * hCount; }); } 
+            } else { 
+                clientName = document.getElementById('contractClientName').value || 'Empresa Não Informada';
+                precoOriginal = parseFloat(document.getElementById('contractFatMensal').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
+                lucroOriginal = parseFloat(document.getElementById('contractLucro').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
+                
+                let useMat = document.getElementById('ctrUseMaterial').checked; 
+                let diasMat = parseFloat(document.getElementById('ctrMatDias').value) || 0; 
+                custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; 
+                window.contractCart.forEach(i => { let s = calcSubContract(i); custoAtual += s.custoEquipe + (parseFloat(i.custoMaterial)||0) + (parseFloat(i.servicoDiferenciado)||0); }); 
+            }
+            
+            let novoLucro = novoPreco - custoAtual; 
+            let novaMargem = novoPreco > 0 ? (novoLucro / novoPreco) * 100 : 0;
+            
+            let descontoRS = precoOriginal - novoPreco;
+            let descontoPerc = precoOriginal > 0 ? (descontoRS / precoOriginal) * 100 : 0;
+            let perdaLucro = lucroOriginal - novoLucro;
+            let margemOriginalPerc = precoOriginal > 0 ? (lucroOriginal / precoOriginal) : 0;
+            let reducaoCustoNecessaria = custoAtual - (novoPreco * (1 - margemOriginalPerc));
+
+            container.classList.remove('hidden'); 
+            let corMsg = novaMargem >= 20 ? 'text-blue-400' : 'text-red-400 font-bold'; 
+            let aviso = novaMargem < 20 ? `<div class="mt-2 text-red-500 font-bold bg-red-900/20 p-1.5 rounded border border-red-500/30 text-center">⚠️ ALERTA: Margem perigosamente baixa!</div>` : ''; 
+            
+            let htmlDetalhado = `
+                <div class="bg-dark-900 p-3 rounded-lg border border-dark-600 shadow-inner mt-3 w-full">
+                    <div class="text-[11px] text-gray-300 font-bold border-b border-dark-700 pb-1.5 mb-2 truncate">👤 Simulação para: ${clientName}</div>
+                    <div class="space-y-1.5 text-[11px]">
+                        <div class="flex justify-between text-gray-400"><span>Preço Original:</span> <span class="line-through">${formatMoney(precoOriginal)}</span></div>
+                        <div class="flex justify-between text-orange-400 font-medium"><span>Desconto Concedido:</span> <span>-${formatMoney(descontoRS)} (${descontoPerc.toFixed(1)}%)</span></div>
+                        <div class="flex justify-between text-gray-400"><span>Custo Fixo Mantido:</span> <span>${formatMoney(custoAtual)}</span></div>
+                    </div>
+                    <div class="h-px bg-dark-700 my-2"></div>
+                    <div class="space-y-1 text-[11px]">
+                        <div class="flex justify-between ${corMsg} font-bold"><span>Novo Lucro Livre:</span> <span>${formatMoney(novoLucro)}</span></div>
+                        <div class="flex justify-between text-gray-400"><span>Nova Margem:</span> <span class="${corMsg}">${novaMargem.toFixed(1)}%</span></div>
+                    </div>
+                    ${perdaLucro > 0 ? `<div class="text-[10px] text-orange-300 mt-2 pt-2 border-t border-dark-700 border-dashed">📉 Você perderá ${formatMoney(perdaLucro)} de lucro nesta negociação.</div>` : `<div class="text-[10px] text-green-400 mt-2 pt-2 border-t border-dark-700 border-dashed">📈 Você ganhará ${formatMoney(Math.abs(perdaLucro))} a mais de lucro.</div>`}
+                    ${(reducaoCustoNecessaria > 0 && descontoRS > 0) ? `<div class="text-[10px] text-gray-400 mt-2 leading-snug bg-dark-800 p-2 rounded border border-dark-700">💡 <b>Dica de Repasse:</b> Para não perder dinheiro e manter a margem de ${(margemOriginalPerc*100).toFixed(1)}%, você precisa cortar ${formatMoney(reducaoCustoNecessaria)} nos custos (Ex: reduzindo o repasse da equipe).</div>` : ''}
+                    ${aviso}
+                </div>
+            `;
+            container.innerHTML = htmlDetalhado;
         }
 
         // ==========================================
