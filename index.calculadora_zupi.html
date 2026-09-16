@@ -58,13 +58,11 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Tema Escuro para Dropdowns (Resolve a tela branca dos meses e opções) */
         select { background-color: #0a0c10; color: #e2e8f0; border: 1px solid #2d333f; outline: none; }
         select option { background-color: #0a0c10 !important; color: #e2e8f0 !important; font-weight: 500; }
         select:focus { border-color: #3b82f6; }
         select:focus option { background-color: #1e212b !important; }
 
-        /* Estilização Customizada do Calendário ZUPI */
         .flatpickr-calendar { background: #0a0c10 !important; border: 1px solid #2d333f !important; box-shadow: 0 10px 25px rgba(0,0,0,0.8) !important; font-family: 'Inter', sans-serif; }
         .flatpickr-calendar.arrowTop:before { border-bottom-color: #2d333f !important; }
         .flatpickr-calendar.arrowTop:after { border-bottom-color: #0a0c10 !important; }
@@ -72,7 +70,6 @@
         .flatpickr-calendar.arrowBottom:after { border-top-color: #0a0c10 !important; }
         .flatpickr-month, .flatpickr-current-month { color: #e2e8f0 !important; fill: #e2e8f0 !important; }
         
-        /* Consertando Fundo dos Meses e Setas de Rolar Ano */
         .flatpickr-monthDropdown-months { background: #0a0c10 !important; color: #e2e8f0 !important; border: 1px solid #2d333f; border-radius: 4px; padding: 2px; }
         .flatpickr-monthDropdown-months option { background-color: #0a0c10 !important; color: #e2e8f0 !important; }
         .flatpickr-current-month .numInputWrapper span.arrowUp:after { border-bottom-color: #9ca3af !important; }
@@ -88,7 +85,6 @@
         .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; font-weight: bold; }
         .flatpickr-day.today { border-color: #4b5563 !important; }
         
-        /* Destaque Azul para Feriados Nacionais */
         .holiday-blue { background: rgba(59, 130, 246, 0.2) !important; border: 1px solid #3b82f6 !important; color: #60a5fa !important; font-weight: bold; box-shadow: inset 0 0 5px rgba(59, 130, 246, 0.5); }
         .holiday-blue:hover { background: rgba(59, 130, 246, 0.4) !important; }
         .holiday-blue.selected { background: #2563eb !important; color: white !important; }
@@ -215,7 +211,7 @@
                         <div class="flex justify-between text-sm"><span class="text-gray-400">Total Equipe</span><span class="text-white font-bold" id="resEquipeTotal">0 Profissionais</span></div>
                         <div class="h-px bg-dark-800 my-2"></div>
                         <div class="flex justify-between text-sm"><span class="text-gray-400">Custos Equipe</span><span class="text-red-400 font-bold" id="resCustoEquipe">R$ 0,00</span></div>
-                        <div class="flex justify-between text-sm"><span class="text-gray-400">Custos Mat/Extras</span><span class="text-orange-400 font-bold" id="resCustoMat">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Custos Materiais</span><span class="text-orange-400 font-bold" id="resCustoMat">R$ 0,00</span></div>
                         
                         <div class="flex flex-col text-sm hidden bg-blue-900/10 p-3 rounded-lg border border-blue-500/20 mt-3" id="resLineFeriados">
                             <div class="flex justify-between items-center mb-1"><span class="text-blue-400 font-bold">Feriados Nacionais (<span id="resFeriadoCount">0</span>)</span><span class="text-blue-300 font-black" id="resValFeriados">R$ 0,00</span></div>
@@ -340,7 +336,7 @@
                         <div class="h-px bg-dark-800 my-2"></div>
                         <h3 id="lblSubTotalTitle" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Subtotais Mensais</h3>
                         <div class="flex justify-between text-sm"><span class="text-gray-400">Custo Equipe</span><span class="text-red-400 font-bold" id="contractCustoEquipe">R$ 0,00</span></div>
-                        <div class="flex justify-between text-sm"><span class="text-gray-400">Materiais/Extras</span><span class="text-orange-400 font-bold" id="contractCustoMat">R$ 0,00</span></div>
+                        <div class="flex justify-between text-sm"><span class="text-gray-400">Custos Materiais</span><span class="text-orange-400 font-bold" id="contractCustoMat">R$ 0,00</span></div>
                         <div class="flex justify-between text-sm pt-2 border-t border-dark-800"><span class="text-gray-400 font-bold">Lucro Bruto ZUPI</span><span class="text-green-400 font-black" id="contractLucro">R$ 0,00</span></div>
                         
                         <div class="bg-dark-800 rounded-lg p-3 mt-2 flex justify-between items-center border border-dark-700">
@@ -642,32 +638,39 @@
         <div class="bg-dark-900 border border-dark-700 rounded-2xl w-full max-w-md shadow-2xl p-0 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500"></div>
             <div class="p-5 border-b border-dark-700 text-center bg-dark-800">
-                <h3 class="text-lg font-black text-white mb-1" id="mdxTitle">Detalhe do Cenário</h3>
+                <h3 class="text-lg font-black text-white mb-1" id="mdxTitle">Cenário: 3 Anos</h3>
                 <p class="text-xs text-gray-400">Abertura de Custos e Serviços</p>
             </div>
-            <div class="p-5 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <div>
-                    <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 border-b border-dark-700 pb-1">Equipe Base</h4>
-                    <div class="flex justify-between text-sm text-gray-300"><span id="mdxBaseName">X Profissionais</span><span id="mdxBaseCusto">R$ 0,00</span></div>
-                    <div class="flex justify-between text-xs text-green-400 mt-1"><span class="pl-2">↳ Lucro Add:</span><span id="mdxBaseLucro">R$ 0,00</span></div>
-                </div>
+            <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                
+                <div id="mdxBaseContainer"></div>
+                
                 <div id="mdxExtrasContainer" class="hidden">
-                    <h4 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-2 border-b border-dark-700 pb-1">Serviços Adicionais</h4>
+                    <h4 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-2 border-b border-dark-700 pb-1 mt-4">Serviços Adicionais</h4>
                     <div id="mdxExtrasList" class="space-y-2"></div>
                 </div>
-                <div id="mdxMatContainer" class="hidden">
-                    <h4 class="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 border-b border-dark-700 pb-1">Estrutura</h4>
-                    <div class="flex justify-between text-sm text-orange-300"><span>Material Global</span><span id="mdxMatCusto">R$ 0,00</span></div>
-                </div>
-                <div class="h-px bg-dark-700 my-2"></div>
+                
+                <div id="mdxMatContainer" class="hidden"></div>
+                
+                <div class="h-px bg-dark-700 my-4"></div>
+                
                 <div class="bg-dark-800 p-4 rounded-xl border border-dark-600 shadow-inner">
-                    <div class="flex justify-between text-red-300 font-medium text-sm mb-1"><span>CUSTO TOTAL:</span><span id="mdxCusto">R$ 0,00</span></div>
-                    <div class="flex justify-between text-green-400 font-medium text-sm mb-3"><span>LUCRO:</span><span id="mdxLucro">R$ 0,00</span></div>
-                    <div class="flex justify-between items-center pt-2 border-t border-dark-700">
-                        <span class="text-white font-black text-sm uppercase">Preço Venda:</span>
-                        <span id="mdxPreco" class="text-2xl font-black text-transparent bg-clip-text accent-gradient">R$ 0,00</span>
+                    <div class="flex justify-between text-red-300 font-medium text-sm mb-1">
+                        <span>CUSTO TOTAL:</span><span id="mdxCusto">R$ 0,00</span>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500 mt-2"><span>Margem Final:</span><span id="mdxMargem" class="font-bold">0%</span></div>
+                    <div class="flex justify-between text-green-400 font-medium text-sm mb-3">
+                        <span>LUCRO:</span><span id="mdxLucro">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-dark-700">
+                        <span class="text-white font-black text-sm uppercase">Preço Venda:</span>
+                        <div class="flex flex-col items-end">
+                            <span id="mdxPreco" class="text-2xl font-black text-transparent bg-clip-text accent-gradient">R$ 0,00</span>
+                            <span id="mdxMensalTag" class="text-[9px] text-blue-300 font-bold uppercase tracking-wider mt-1 bg-blue-900/30 px-2 py-0.5 rounded border border-blue-500/30 hidden">MENSAL: R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-3">
+                        <span>Margem Final:</span><span id="mdxMargem" class="font-bold">0%</span>
+                    </div>
                 </div>
             </div>
             <div class="p-4 bg-dark-800 border-t border-dark-700">
@@ -1090,7 +1093,7 @@
             for(let p=1; p<=Math.min(maxP,100); p++) {
                 bodyHTML += `<tr class="hover:bg-dark-800 transition"><td class="p-2 font-bold text-gray-300 border-r border-dark-700 bg-dark-900 sticky left-0 z-10">${p}</td>`;
                 for(let d=1; d<=Math.min(maxD,30); d++) {
-                    let realDays = d * daysMult; // Correção: Transforma meses/anos em dias para cálculo base exato
+                    let realDays = d * daysMult; 
                     let cstBase = p * realDays * bCusto; 
                     let calcBase = calcularFaturamentoItem(cstBase, bMargemTipo==='perc'?bMargem:(bMargem*p*realDays), bMargemTipo); 
                     let prcBase = calcBase.fatTotal;
@@ -1135,24 +1138,51 @@
             if(unit === 'meses') { unitLabel = 'Meses'; daysMult = 30; divMensal = true; monthsCount = d; } 
             else if(unit === 'anos') { unitLabel = 'Anos'; daysMult = 365; divMensal = true; monthsCount = d * 12; }
             
-            let realDays = d * daysMult; // Correção: Multiplica os dias totais do período
+            let realDays = d * daysMult; 
             
             let cstBase = p * realDays * bCusto; 
             let calcBase = calcularFaturamentoItem(cstBase, bMargemTipo==='perc'?bMargem:(bMargem*p*realDays), bMargemTipo);
             
             document.getElementById('mdxTitle').innerText = `Cenário: ${d} ${unitLabel}`; 
-            document.getElementById('mdxBaseName').innerText = `${p} Profissionais (${realDays} dias)`; 
-            document.getElementById('mdxBaseCusto').innerText = formatMoney(cstBase); 
-            document.getElementById('mdxBaseLucro').innerText = formatMoney(calcBase.margemEquipe);
             
+            // Lógica de texto detalhado (Diário/Mensal) para a Equipe Base
+            let baseBreakdown = "";
+            if (divMensal) {
+                let cstMes = (cstBase / monthsCount);
+                let lucMes = (calcBase.margemEquipe / monthsCount);
+                baseBreakdown = `
+                    <div class="flex justify-between text-[10px] text-gray-400 mt-1"><span class="pl-2">↳ Custo Aberto:</span><span>${formatMoney(cstBase/realDays)}/dia | ${formatMoney(cstMes)}/mês</span></div>
+                    <div class="flex justify-between text-[10px] text-green-500/70 mt-0.5"><span class="pl-2">↳ Lucro Aberto:</span><span>${formatMoney(calcBase.margemEquipe/realDays)}/dia | ${formatMoney(lucMes)}/mês</span></div>
+                `;
+            } else {
+                baseBreakdown = `
+                    <div class="flex justify-between text-[10px] text-gray-400 mt-1"><span class="pl-2">↳ Custo Aberto:</span><span>${formatMoney(cstBase/realDays)}/dia</span></div>
+                    <div class="flex justify-between text-[10px] text-green-500/70 mt-0.5"><span class="pl-2">↳ Lucro Aberto:</span><span>${formatMoney(calcBase.margemEquipe/realDays)}/dia</span></div>
+                `;
+            }
+
+            document.getElementById('mdxBaseContainer').innerHTML = `
+                <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 border-b border-dark-700 pb-1">Equipe Base</h4>
+                <div class="flex justify-between text-sm text-gray-300"><span class="font-bold">${p} Profissionais (${realDays} dias)</span><span class="text-white">${formatMoney(cstBase)}</span></div>
+                ${baseBreakdown}
+                <div class="flex justify-between text-xs text-green-400 mt-2"><span class="pl-2 font-bold">↳ Lucro Total Equipe:</span><span class="font-bold">${formatMoney(calcBase.margemEquipe)}</span></div>
+            `;
+            
+            // Lógica de texto detalhado para Material
             const matTotal = window.globalMaterialDiario * realDays; 
             if(matTotal > 0) { 
+                let matBreakdown = divMensal ? `<span>${formatMoney(window.globalMaterialDiario)}/dia | ${formatMoney(matTotal/monthsCount)}/mês</span>` : `<span>${formatMoney(window.globalMaterialDiario)}/dia</span>`;
+                document.getElementById('mdxMatContainer').innerHTML = `
+                    <h4 class="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-2 border-b border-dark-700 pb-1 mt-4">Estrutura e Insumos</h4>
+                    <div class="flex justify-between text-sm text-orange-300"><span class="font-bold">Material Global</span><span class="text-white">${formatMoney(matTotal)}</span></div>
+                    <div class="flex justify-between text-[10px] text-orange-300/70 mt-1"><span class="pl-2">↳ Custo Aberto:</span>${matBreakdown}</div>
+                `;
                 document.getElementById('mdxMatContainer').classList.remove('hidden'); 
-                document.getElementById('mdxMatCusto').innerText = formatMoney(matTotal); 
             } else { 
                 document.getElementById('mdxMatContainer').classList.add('hidden'); 
             }
             
+            // Lógica de Extras
             let cstExtras = 0; let prcExtras = 0; const extList = document.getElementById('mdxExtrasList'); extList.innerHTML = '';
             if(window.matrizExtras.some(ex => (parseFloat(ex.qtd)||0) > 0)) {
                 document.getElementById('mdxExtrasContainer').classList.remove('hidden');
@@ -1170,11 +1200,32 @@
                         let cEx = qE * cE * mult; 
                         let calcEx = calcularFaturamentoItem(cEx, ex.tipoMargem==='perc'?mE:(mE*qE*mult), ex.tipoMargem); 
                         cstExtras += cEx; prcExtras += calcEx.fatTotal;
-                        extList.insertAdjacentHTML('beforeend', `<div class="bg-dark-900 p-2 rounded border border-dark-700"><div class="flex justify-between text-xs text-gray-300 font-bold mb-1"><span>${qE}x ${ex.nome} <span class="text-[9px] text-gray-500 font-normal">(${fStr})</span></span><span>+ ${formatMoney(cEx)} (Custo)</span></div><div class="text-[9px] text-purple-300 text-right">↳ Lucro Add: ${formatMoney(calcEx.margemEquipe)}</div></div>`);
+
+                        let exBreakdown = "";
+                        if(divMensal) {
+                            exBreakdown = `<div class="flex justify-between text-[10px] text-gray-400 mt-1"><span class="pl-2">↳ Custo Aberto:</span><span>${formatMoney(cEx/realDays)}/dia | ${formatMoney(cEx/monthsCount)}/mês</span></div>`;
+                        } else {
+                            exBreakdown = `<div class="flex justify-between text-[10px] text-gray-400 mt-1"><span class="pl-2">↳ Custo Aberto:</span><span>${formatMoney(cEx/realDays)}/dia</span></div>`;
+                        }
+                        
+                        extList.insertAdjacentHTML('beforeend', `
+                            <div class="bg-dark-900 p-2 rounded border border-dark-700 mb-2">
+                                <div class="flex justify-between text-xs text-gray-300 font-bold mb-1">
+                                    <span>${qE}x ${ex.nome} <span class="text-[9px] text-gray-500 font-normal">(${fStr})</span></span>
+                                    <span>${formatMoney(cEx)} <span class="text-[9px] text-gray-500 font-normal">(Custo)</span></span>
+                                </div>
+                                ${exBreakdown}
+                                <div class="flex justify-between text-[10px] text-purple-300 mt-1 font-bold">
+                                    <span class="pl-2">↳ Lucro Total Serviço:</span>
+                                    <span>${formatMoney(calcEx.margemEquipe)}</span>
+                                </div>
+                            </div>
+                        `);
                     }
                 });
             } else { document.getElementById('mdxExtrasContainer').classList.add('hidden'); }
             
+            // Totais Finais e Tag Mensal
             let cstTotal = cstBase + cstExtras + matTotal; 
             let prcTotal = calcBase.fatTotal + prcExtras + matTotal; 
             let lucTotal = prcTotal - cstTotal; 
@@ -1182,17 +1233,17 @@
             
             document.getElementById('mdxCusto').innerText = formatMoney(cstTotal); 
             document.getElementById('mdxLucro').innerText = formatMoney(lucTotal); 
+            document.getElementById('mdxPreco').innerText = formatMoney(prcTotal); 
+            document.getElementById('mdxMargem').innerText = mReal.toFixed(1) + '%';
             
-            // Lógica para mostrar Valor Total e Equivalente Mensal
-            if(divMensal && monthsCount > 0) {
-                document.getElementById('mdxPreco').innerHTML = `<div class="text-2xl font-black text-transparent bg-clip-text accent-gradient text-right">${formatMoney(prcTotal)}</div><div class="text-[9px] text-blue-300 font-bold uppercase tracking-wider mt-1 bg-blue-900/30 px-2 py-0.5 rounded border border-blue-500/30 text-right w-max ml-auto">Mensal: ${formatMoney(prcTotal / monthsCount)}</div>`;
-                document.getElementById('mdxPreco').className = "flex flex-col items-end";
+            let tagMensal = document.getElementById('mdxMensalTag');
+            if(divMensal) {
+                tagMensal.innerText = `MENSAL: ${formatMoney(prcTotal / monthsCount)}`;
+                tagMensal.classList.remove('hidden');
             } else {
-                document.getElementById('mdxPreco').innerHTML = formatMoney(prcTotal);
-                document.getElementById('mdxPreco').className = "text-2xl font-black text-transparent bg-clip-text accent-gradient";
+                tagMensal.classList.add('hidden');
             }
             
-            document.getElementById('mdxMargem').innerText = mReal.toFixed(1) + '%';
             document.getElementById('matrixDetailModal').classList.remove('hidden');
         }
 
