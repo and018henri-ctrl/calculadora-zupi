@@ -382,12 +382,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-dark-800 p-3 rounded-xl border border-dark-700">
                         <div class="col-span-1 border-r border-dark-700 pr-4">
                             <h4 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-2 flex items-center gap-1">👥 Eixo Base (Tabela)</h4>
-                            <div class="grid grid-cols-2 gap-2 mb-2">
-                                <div><label class="block text-[9px] text-gray-500 mb-0.5">Máx Prof</label><input type="number" id="matrizMaxProf" value="10" min="1" oninput="window.gerarMatriz()" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-white text-xs text-center outline-none"></div>
-                                <div><label class="block text-[9px] text-gray-500 mb-0.5">Máx Dias</label><input type="number" id="matrizMaxDias" value="7" min="1" oninput="window.gerarMatriz()" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-white text-xs text-center outline-none"></div>
+                            <div class="grid grid-cols-3 gap-2 mb-2">
+                                <div><label class="block text-[9px] text-gray-500 mb-0.5">Qtd Profs</label><input type="number" id="matrizMaxProf" value="10" min="1" oninput="window.gerarMatriz()" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-white text-xs text-center outline-none"></div>
+                                <div><label class="block text-[9px] text-gray-500 mb-0.5" id="lblMatrizQtd">Qtd Dias</label><input type="number" id="matrizMaxDias" value="7" min="1" oninput="window.gerarMatriz()" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-white text-xs text-center outline-none"></div>
+                                <div><label class="block text-[9px] text-gray-500 mb-0.5">Período</label><select id="matrizUnidade" onchange="window.changeMatrizUnit()" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-white text-xs text-center outline-none cursor-pointer"><option value="dias" selected>Dias</option><option value="meses">Meses</option><option value="anos">Anos</option></select></div>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <div><label class="block text-[9px] text-gray-500 mb-0.5">Custo/Dia (R$)</label><input type="number" id="matrizCusto" value="120" oninput="window.updateBaseMarginHint(); window.gerarMatriz();" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-red-300 text-xs text-center outline-none"></div>
+                                <div><label class="block text-[9px] text-gray-500 mb-0.5" id="lblMatrizCusto">Custo/Dia (R$)</label><input type="number" id="matrizCusto" value="120" oninput="window.updateBaseMarginHint(); window.gerarMatriz();" class="w-full bg-dark-900 border border-dark-600 rounded p-1 text-red-300 text-xs text-center outline-none"></div>
                                 <div>
                                     <label class="block text-[9px] text-gray-500 mb-0.5">Margem</label>
                                     <div class="flex items-center border border-dark-600 rounded bg-dark-900">
@@ -1000,7 +1001,7 @@
             if (window.eventCart.length === 0) { container.innerHTML = `<div class="text-center text-gray-500 py-6 border border-dashed border-dark-600 rounded-xl">Nenhum serviço atrelado.</div>`; window.calcularTotaisEvento(); return; }
             window.eventCart.forEach((item, idx) => {
                 let sub = calcSubEvent(item, days); let isHora = item.tipoCobranca === 'hora';
-                container.insertAdjacentHTML('beforeend', `<div class="bg-dark-800 border border-dark-600 rounded-xl p-3 sm:p-4 shadow-sm relative group hover:border-blue-500/50 transition">${window.eventCart.length > 1 ? `<button onclick="window.eventCart.splice(${idx},1); window.saveFocus(); window.renderEventCart(); window.restoreFocus();" class="absolute top-2 right-2 text-red-500/50 hover:text-red-400 text-xs bg-dark-900 rounded px-2 py-1 z-10 transition">✖</button>` : ''}<div class="flex flex-col sm:flex-row gap-3 mb-3"><div class="w-full sm:w-1/2"><label class="block text-[10px] text-gray-400 mb-1">Serviço / Equipe</label><select id="evt_servico_${item.id}" onchange="window.updateEventItem('${item.id}', 'servicoId', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white outline-none focus:border-blue-500 text-xs font-medium">${generateServiceOptions(item.servicoId)}</select></div><div class="w-full sm:w-1/2 grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-gray-400 mb-1">Qtd. Colaboradores</label><input type="number" id="evt_qtd_${item.id}" min="1" value="${item.qtd}" oninput="window.updateEventItem('${item.id}', 'qtd', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white text-center text-xs outline-none font-bold"></div>${isHora ? `<div><label class="block text-[10px] text-gray-400 mb-1">Horas/Dia</label><input type="number" id="evt_horas_${item.id}" min="1" value="${item.horasPorDia}" oninput="window.updateEventItem('${item.id}', 'horasPorDia', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white text-center text-xs outline-none font-bold"></div>` : '<div></div>'}</div></div><div class="flex flex-col sm:flex-row gap-3 bg-dark-900/50 p-3 rounded-lg border border-dark-700/50"><div class="w-full sm:w-1/2"><label class="block text-[10px] text-gray-500 mb-1">Custo Unit. ZUPI (${isHora?'/h':'/dia'})</label><div class="flex items-center bg-dark-800 rounded px-2"><span class="text-[10px] text-red-500 mr-1">R$</span><input type="text" id="evt_custo_${item.id}" value="${item.custoBase}" oninput="window.updateEventItem('${item.id}', 'custoBase', this.value)" class="w-full bg-transparent text-red-300 text-sm outline-none font-medium py-1.5"></div></div><div class="w-full sm:w-1/2"><label class="block text-[10px] text-gray-500 mb-1">Margem Unitária (Lucro)</label><div class="flex items-center border border-dark-600 rounded bg-dark-800 focus-within:border-green-500 transition"><input type="text" id="evt_margem_${item.id}" value="${item.margemBase}" oninput="window.updateEventItem('${item.id}', 'margemBase', this.value)" class="w-2/3 bg-transparent p-1.5 text-green-300 text-sm outline-none font-bold px-2"><select id="evt_tipoMargem_${item.id}" onchange="window.updateEventItem('${item.id}', 'margemTipo', this.value)" class="w-1/3 bg-dark-900 text-[10px] text-gray-400 p-2 outline-none rounded-r border-l border-dark-600 h-full cursor-pointer"><option value="fixo" ${item.margemTipo==='fixo'?'selected':''}>R$</option><option value="perc" ${item.margemTipo==='perc'?'selected':''}>%</option></select></div></div></div><div class="grid grid-cols-2 gap-3 mt-3"><div><label class="block text-[10px] text-gray-500 mb-1">Custo Extra (Material da Equipe)</label><input type="text" id="evt_mat_${item.id}" value="${item.custoMaterial}" oninput="window.updateEventItem('${item.id}', 'custoMaterial', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-orange-300 text-xs outline-none"></div><div><label class="block text-[10px] text-gray-500 mb-1">Adicionais (Taxas / Receita)</label><input type="text" id="evt_dif_${item.id}" value="${item.servicoDiferenciado}" oninput="window.updateEventItem('${item.id}', 'servicoDiferenciado', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-orange-300 text-xs outline-none"></div></div><div class="mt-3 flex justify-between items-center px-2 pt-2 border-t border-dark-700"><span class="text-[10px] text-gray-500">Custo Equipe: ${formatMoney(sub.custoEquipe)}</span><span class="text-xs font-bold text-blue-400">Faturamento Final: ${formatMoney(sub.fatTotal)}</span></div></div>`);
+                container.insertAdjacentHTML('beforeend', `<div class="bg-dark-800 border border-dark-600 rounded-xl p-3 sm:p-4 shadow-sm relative group hover:border-blue-500/50 transition">${window.eventCart.length > 1 ? `<button onclick="window.eventCart.splice(${idx},1); window.saveFocus(); window.renderEventCart(); window.restoreFocus();" class="absolute top-2 right-2 text-red-500/50 hover:text-red-400 text-xs bg-dark-900 rounded px-2 py-1 z-10 transition">✖</button>` : ''}<div class="flex flex-col sm:flex-row gap-3 mb-3"><div class="w-full sm:w-1/2"><label class="block text-[10px] text-gray-400 mb-1">Serviço / Equipe</label><select id="evt_servico_${item.id}" onchange="window.updateEventItem('${item.id}', 'servicoId', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white outline-none focus:border-blue-500 text-xs font-medium">${generateServiceOptions(item.servicoId)}</select></div><div class="w-full sm:w-1/2 grid grid-cols-2 gap-2"><div><label class="block text-[10px] text-gray-400 mb-1">Qtd. Colaboradores</label><input type="number" id="evt_qtd_${item.id}" min="1" value="${item.qtd}" oninput="window.updateEventItem('${item.id}', 'qtd', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white text-center text-xs outline-none font-bold"></div>${isHora ? `<div><label class="block text-[10px] text-gray-400 mb-1">Horas/Dia</label><input type="number" id="evt_horas_${item.id}" min="1" value="${item.horasPorDia}" oninput="window.updateEventItem('${item.id}', 'horasPorDia', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-2 text-white text-center text-xs outline-none font-bold"></div>` : '<div></div>'}</div></div><div class="flex flex-col sm:flex-row gap-3 bg-dark-900/50 p-3 rounded-lg border border-dark-700/50"><div class="w-full sm:w-1/2"><label class="block text-[10px] text-gray-500 mb-1">Custo Unit. ZUPI (${isHora?'/h':'/dia'})</label><div class="flex items-center bg-dark-800 rounded px-2"><span class="text-[10px] text-red-500 mr-1">R$</span><input type="text" id="evt_custo_${item.id}" value="${item.custoBase}" oninput="window.updateEventItem('${item.id}', 'custoBase', this.value)" class="w-full bg-transparent text-red-300 text-sm outline-none font-medium py-1.5"></div></div><div class="w-full sm:w-1/2"><label class="block text-[10px] text-gray-500 mb-1">Margem Unitária (Lucro)</label><div class="flex items-center border border-dark-600 rounded bg-dark-800 focus-within:border-green-500 transition"><input type="text" id="evt_margem_${item.id}" value="${item.margemBase}" oninput="window.updateEventItem('${item.id}', 'margemBase', this.value)" class="w-2/3 bg-transparent p-1.5 text-green-300 text-sm outline-none font-bold px-2"><select id="evt_tipoMargem_${item.id}" onchange="window.updateEventItem('${item.id}', 'margemTipo', this.value)" class="w-1/3 bg-dark-900 text-[10px] text-gray-400 p-2 outline-none rounded-r border-l border-dark-600 h-full cursor-pointer"><option value="fixo" ${item.margemTipo==='fixo'?'selected':''}>R$</option><option value="perc" ${item.margemTipo==='perc'?'selected':''}>%</option></select></div><div class="text-[9px] text-green-400/80 mt-1 text-right">Lucro deste serviço: <b>${formatMoney(sub.margemEquipe)}</b></div></div></div><div class="mt-3 flex justify-between items-center px-2 pt-2 border-t border-dark-700"><span class="text-[10px] text-gray-500">Custo Equipe: ${formatMoney(sub.custoEquipe)}</span><span class="text-xs font-bold text-blue-400">Faturamento Final: ${formatMoney(sub.fatTotal)}</span></div></div>`);
             });
             window.calcularTotaisEvento();
         }
@@ -1042,7 +1043,7 @@
             const unitVal = document.getElementById('contractUnit').value || 'Ciclo';
             window.contractCart.forEach((item, idx) => {
                 let sub = calcSubContract(item); let isHora = item.tipoCobranca === 'hora';
-                container.insertAdjacentHTML('beforeend', `<div class="bg-dark-800 border border-dark-600 rounded-xl shadow-sm flex flex-col lg:flex-row relative group hover:border-green-500/50 transition overflow-hidden">${window.contractCart.length > 1 ? `<button onclick="window.contractCart.splice(${idx},1); window.saveFocus(); window.renderContractCart(); window.restoreFocus();" class="absolute top-2 right-2 text-red-500/50 hover:text-red-400 text-xs bg-dark-900 rounded px-2 py-1 z-10">✖</button>` : ''}<div class="lg:w-1/3 p-4 border-b lg:border-b-0 lg:border-r border-dark-700 relative"><span class="absolute top-0 left-0 bg-dark-700 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">1. EQUIPE ALOCADA</span><div class="mt-2 mb-3"><label class="block text-[10px] text-gray-400 mb-1">Cargo / Serviço</label><select id="ctr_servico_${item.id}" onchange="window.updateContractItem('${item.id}', 'servicoId', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-1.5 text-white outline-none focus:border-green-500 text-xs font-bold">${generateServiceOptions(item.servicoId)}</select></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[9px] text-gray-400 mb-1">Qtd. Colaboradores</label><input type="number" id="ctr_qtd_${item.id}" min="1" value="${item.qtd}" oninput="window.updateContractItem('${item.id}', 'qtd', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-white outline-none text-center font-bold text-xs"></div><div><label class="block text-[9px] text-gray-400 mb-1" title="Dias por ciclo">Dias de Uso</label><input type="number" id="ctr_dias_${item.id}" min="1" step="any" value="${item.diasPorCiclo}" oninput="window.updateContractItem('${item.id}', 'diasPorCiclo', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-white outline-none text-center font-bold text-xs"></div></div>${isHora ? `<div class="mt-2"><label class="block text-[9px] text-gray-400 mb-1">Horas/Dia</label><input type="number" id="ctr_horas_${item.id}" min="1" step="any" value="${item.horasPorDia}" oninput="window.updateContractItem('${item.id}', 'horasPorDia', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-white outline-none text-center font-bold text-xs"></div>` : ''}</div><div class="lg:w-1/3 p-4 border-b lg:border-b-0 lg:border-r border-dark-700 bg-dark-900/30 relative"><span class="absolute top-0 left-0 bg-dark-700 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">2. FINANCEIRO UNITÁRIO (${isHora?'/h':'/dia'})</span><div class="mt-4 space-y-3"><div><label class="block text-[9px] text-gray-400 mb-1">Custo ZUPI Base</label><div class="flex items-center bg-dark-800 rounded px-2"><span class="text-[10px] text-red-500 mr-1">R$</span><input type="text" id="ctr_custo_${item.id}" value="${item.custoBase}" oninput="window.updateContractItem('${item.id}', 'custoBase', this.value)" class="w-full bg-transparent text-red-300 text-xs outline-none font-medium py-1"></div></div><div><label class="block text-[9px] text-gray-400 mb-1">Margem / Lucro</label><div class="flex items-center border border-dark-600 rounded bg-dark-800 focus-within:border-green-500 transition px-2"><input type="text" id="ctr_margem_${item.id}" value="${item.margemBase}" oninput="window.updateContractItem('${item.id}', 'margemBase', this.value)" class="w-2/3 bg-transparent p-1.5 text-green-300 text-xs outline-none font-bold"><select id="ctr_tipoMargem_${item.id}" onchange="window.updateContractItem('${item.id}', 'margemTipo', this.value)" class="w-1/3 bg-dark-900 text-[9px] text-gray-400 p-1.5 outline-none rounded-r border-l border-dark-600 cursor-pointer"><option value="fixo" ${item.margemTipo==='fixo'?'selected':''}>R$</option><option value="perc" ${item.margemTipo==='perc'?'selected':''}>%</option></select></div></div><div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-dark-700 border-dashed"><div><label class="block text-[8px] text-gray-500 mb-1">Mat. Específico</label><input type="text" id="ctr_mat_${item.id}" value="${item.custoMaterial}" oninput="window.updateContractItem('${item.id}', 'custoMaterial', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded p-1 text-orange-300 text-xs outline-none"></div><div><label class="block text-[8px] text-gray-500 mb-1">Extras (Receita)</label><input type="text" id="ctr_dif_${item.id}" value="${item.servicoDiferenciado}" oninput="window.updateContractItem('${item.id}', 'servicoDiferenciado', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded p-1 text-orange-300 text-xs outline-none"></div></div></div></div><div class="lg:w-1/3 bg-dark-900 p-4 flex flex-col justify-center relative shadow-inner"><span class="absolute top-0 left-0 bg-dark-700 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">3. TOTAL (${unitVal.toUpperCase()})</span><div class="mt-4"><div class="flex justify-between items-center text-[10px] mb-1"><span class="text-gray-500">Custo Total (Equipe):</span><span class="text-gray-400">${formatMoney(sub.custoEquipe)}</span></div><div class="flex justify-between items-center text-[10px] mb-2"><span class="text-gray-500">Lucro Total ZUPI:</span><span class="text-gray-400">${formatMoney(sub.margemEquipe)}</span></div><div class="pt-2 border-t border-dark-700"><span class="block text-[9px] text-green-400 font-bold uppercase tracking-wider mb-0.5">Faturamento Parcial:</span><span class="block text-xl font-black text-white truncate">${formatMoney(sub.fatTotal)}</span></div></div></div></div>`);
+                container.insertAdjacentHTML('beforeend', `<div class="bg-dark-800 border border-dark-600 rounded-xl shadow-sm flex flex-col lg:flex-row relative group hover:border-green-500/50 transition overflow-hidden">${window.contractCart.length > 1 ? `<button onclick="window.contractCart.splice(${idx},1); window.saveFocus(); window.renderContractCart(); window.restoreFocus();" class="absolute top-2 right-2 text-red-500/50 hover:text-red-400 text-xs bg-dark-900 rounded px-2 py-1 z-10">✖</button>` : ''}<div class="lg:w-1/3 p-4 border-b lg:border-b-0 lg:border-r border-dark-700 relative"><span class="absolute top-0 left-0 bg-dark-700 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">1. EQUIPE ALOCADA</span><div class="mt-2 mb-3"><label class="block text-[10px] text-gray-400 mb-1">Cargo / Serviço</label><select id="ctr_servico_${item.id}" onchange="window.updateContractItem('${item.id}', 'servicoId', this.value)" class="w-full bg-dark-900 border border-dark-700 rounded-lg p-1.5 text-white outline-none focus:border-green-500 text-xs font-bold">${generateServiceOptions(item.servicoId)}</select></div><div class="grid grid-cols-2 gap-2"><div><label class="block text-[9px] text-gray-400 mb-1">Qtd. Colaboradores</label><input type="number" id="ctr_qtd_${item.id}" min="1" value="${item.qtd}" oninput="window.updateContractItem('${item.id}', 'qtd', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-white outline-none text-center font-bold text-xs"></div><div><label class="block text-[9px] text-gray-400 mb-1" title="Dias por ciclo">Dias de Uso</label><input type="number" id="ctr_dias_${item.id}" min="1" step="any" value="${item.diasPorCiclo}" oninput="window.updateContractItem('${item.id}', 'diasPorCiclo', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-white outline-none text-center font-bold text-xs"></div></div>${isHora ? `<div class="mt-2"><label class="block text-[9px] text-gray-400 mb-1">Horas/Dia</label><input type="number" id="ctr_horas_${item.id}" min="1" step="any" value="${item.horasPorDia}" oninput="window.updateContractItem('${item.id}', 'horasPorDia', this.value)" class="w-full bg-dark-900 border border-dark-600 rounded p-1.5 text-white outline-none text-center font-bold text-xs"></div>` : ''}</div><div class="lg:w-1/3 p-4 border-b lg:border-b-0 lg:border-r border-dark-700 bg-dark-900/30 relative"><span class="absolute top-0 left-0 bg-dark-700 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">2. FINANCEIRO UNITÁRIO (${isHora?'/h':'/dia'})</span><div class="mt-4 space-y-3"><div><label class="block text-[9px] text-gray-400 mb-1">Custo ZUPI Base</label><div class="flex items-center bg-dark-800 rounded px-2"><span class="text-[10px] text-red-500 mr-1">R$</span><input type="text" id="ctr_custo_${item.id}" value="${item.custoBase}" oninput="window.updateContractItem('${item.id}', 'custoBase', this.value)" class="w-full bg-transparent text-red-300 text-xs outline-none font-medium py-1"></div></div><div><label class="block text-[9px] text-gray-400 mb-1">Margem / Lucro</label><div class="flex items-center border border-dark-600 rounded bg-dark-800 focus-within:border-green-500 transition px-2"><input type="text" id="ctr_margem_${item.id}" value="${item.margemBase}" oninput="window.updateContractItem('${item.id}', 'margemBase', this.value)" class="w-2/3 bg-transparent p-1.5 text-green-300 text-xs outline-none font-bold"><select id="ctr_tipoMargem_${item.id}" onchange="window.updateContractItem('${item.id}', 'margemTipo', this.value)" class="w-1/3 bg-dark-900 text-[9px] text-gray-400 p-1.5 outline-none rounded-r border-l border-dark-600 cursor-pointer"><option value="fixo" ${item.margemTipo==='fixo'?'selected':''}>R$</option><option value="perc" ${item.margemTipo==='perc'?'selected':''}>%</option></select></div><div class="text-[9px] text-green-400/80 mt-1 text-right">Lucro gerado: <b>${formatMoney(sub.margemEquipe)}</b></div></div></div></div><div class="lg:w-1/3 bg-dark-900 p-4 flex flex-col justify-center relative shadow-inner"><span class="absolute top-0 left-0 bg-dark-700 text-gray-400 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">3. TOTAL (${unitVal.toUpperCase()})</span><div class="mt-4"><div class="flex justify-between items-center text-[10px] mb-1"><span class="text-gray-500">Custo Total (Equipe):</span><span class="text-gray-400">${formatMoney(sub.custoEquipe)}</span></div><div class="flex justify-between items-center text-[10px] mb-2"><span class="text-gray-500">Lucro Total ZUPI:</span><span class="text-gray-400">${formatMoney(sub.margemEquipe)}</span></div><div class="pt-2 border-t border-dark-700"><span class="block text-[9px] text-green-400 font-bold uppercase tracking-wider mb-0.5">Faturamento Parcial:</span><span class="block text-xl font-black text-white truncate">${formatMoney(sub.fatTotal)}</span></div></div></div></div>`);
             });
             window.calcularTotaisContrato();
         }
@@ -1064,6 +1065,7 @@
         // ==========================================
         window.salvarMatrizExtras = function() { if(!window.currentUser) return; localStorage.setItem('zupi_matriz_extras_' + window.currentUser.username, JSON.stringify(window.matrizExtras)); }
         window.updateBaseMarginHint = function() { const custo = parseFloat(document.getElementById('matrizCusto').value) || 0; const margem = parseFloat(document.getElementById('matrizMargem').value) || 0; const tipo = document.getElementById('matrizMargemTipo').value; const el = document.getElementById('baseMarginHintVal'); if(el) el.innerText = getEquivalentMarginText(custo, margem, tipo); }
+        window.changeMatrizUnit = function() { const unit = document.getElementById('matrizUnidade').value; const lblQtd = document.getElementById('matrizMaxDias').previousElementSibling; if (unit === 'dias') { lblQtd.innerText = 'Máx Dias'; } else if (unit === 'meses') { lblQtd.innerText = 'Máx Meses'; } else if (unit === 'anos') { lblQtd.innerText = 'Máx Anos'; } window.gerarMatriz(); }
         window.renderMatrizExtras = function() {
             const container = document.getElementById('matrizExtrasContainer'); container.innerHTML = '';
             if(window.matrizExtras.length === 0) { container.innerHTML = '<div class="text-[9px] text-gray-500 text-center py-2">Nenhum serviço extra. Tabela usará os Recreadores e Estrutura.</div>'; return; }
@@ -1075,21 +1077,48 @@
         window.updateMatrizExtra = function(id, field, val) { const ex = window.matrizExtras.find(e => e.id === id); if(!ex) return; ex[field] = val; const el = document.getElementById(`hint_${id}`); if(el) el.innerHTML = getEquivalentMarginText(parseFloat(ex.custo)||0, parseFloat(ex.margem)||0, ex.tipoMargem); window.gerarMatriz(); if(field==='frequencia') { window.saveFocus(); window.renderMatrizExtras(); window.restoreFocus(); } window.salvarMatrizExtras(); }
         window.gerarMatriz = function() {
             window.updateBaseMarginHint(); const maxP = parseInt(document.getElementById('matrizMaxProf').value)||10; const maxD = parseInt(document.getElementById('matrizMaxDias').value)||7; const bCusto = parseFloat(document.getElementById('matrizCusto').value)||120; const bMargem = parseFloat(document.getElementById('matrizMargem').value)||160; const bMargemTipo = document.getElementById('matrizMargemTipo').value; const matD = window.globalMaterialDiario; const viewMode = document.getElementById('matrizView').value; const thead = document.getElementById('matrizHead'); const tbody = document.getElementById('matrizBody');
-            let headHTML = '<tr><th class="p-2 border-r border-dark-700 bg-dark-900 sticky left-0 z-10">Prof. \\ Dias</th>'; for(let d=1; d<=Math.min(maxD,30); d++) headHTML += `<th class="p-2 text-center min-w-[80px]">${d}d</th>`; headHTML += '</tr>'; thead.innerHTML = headHTML; let bodyHTML = '';
+            
+            const unit = document.getElementById('matrizUnidade').value; 
+            let unitLabel = 'd'; let daysMult = 1; 
+            if(unit === 'meses') { unitLabel = 'm'; daysMult = 30; } 
+            else if(unit === 'anos') { unitLabel = 'a'; daysMult = 365; }
+            
+            let headHTML = '<tr><th class="p-2 border-r border-dark-700 bg-dark-900 sticky left-0 z-10">Prof. \\ Período</th>'; 
+            for(let d=1; d<=Math.min(maxD,30); d++) headHTML += `<th class="p-2 text-center min-w-[80px]">${d}${unitLabel}</th>`; 
+            headHTML += '</tr>'; thead.innerHTML = headHTML; let bodyHTML = '';
+            
             for(let p=1; p<=Math.min(maxP,100); p++) {
                 bodyHTML += `<tr class="hover:bg-dark-800 transition"><td class="p-2 font-bold text-gray-300 border-r border-dark-700 bg-dark-900 sticky left-0 z-10">${p}</td>`;
                 for(let d=1; d<=Math.min(maxD,30); d++) {
-                    let cstBase = p * d * bCusto; let calcBase = calcularFaturamentoItem(cstBase, bMargemTipo==='perc'?bMargem:(bMargem*p*d), bMargemTipo); let prcBase = calcBase.fatTotal;
+                    let realDays = d * daysMult; // Correção: Transforma meses/anos em dias para cálculo base exato
+                    let cstBase = p * realDays * bCusto; 
+                    let calcBase = calcularFaturamentoItem(cstBase, bMargemTipo==='perc'?bMargem:(bMargem*p*realDays), bMargemTipo); 
+                    let prcBase = calcBase.fatTotal;
+                    
                     let cstExtras = 0; let prcExtras = 0;
                     window.matrizExtras.forEach(ex => {
                         let mult = 1; let qE = parseFloat(ex.qtd)||0; let cE = parseFloat(ex.custo)||0; let mE = parseFloat(ex.margem)||0; let hE = parseFloat(ex.horas)||1;
-                        if(ex.frequencia === 'hora') mult = d * hE; else if(ex.frequencia === 'dia') mult = d; else if(ex.frequencia === 'semana') mult = Math.ceil(d/7); else if(ex.frequencia === 'mes') mult = Math.ceil(d/30); else if(ex.frequencia === 'prof') mult = p; else mult = 1; 
+                        if(ex.frequencia === 'hora') mult = realDays * hE; 
+                        else if(ex.frequencia === 'dia') mult = realDays; 
+                        else if(ex.frequencia === 'semana') mult = Math.ceil(realDays/7); 
+                        else if(ex.frequencia === 'mes') mult = Math.ceil(realDays/30); 
+                        else if(ex.frequencia === 'prof') mult = p; 
+                        else mult = 1; 
                         let cEx = qE * cE * mult; let calcEx = calcularFaturamentoItem(cEx, ex.tipoMargem==='perc'?mE:(mE*qE*mult), ex.tipoMargem); cstExtras += cEx; prcExtras += calcEx.fatTotal;
                     });
-                    let matTotal = matD * d; let cstTotal = cstBase + cstExtras + matTotal; let prcTotal = prcBase + prcExtras + matTotal; let lucTotal = prcTotal - cstTotal; let margemReal = prcTotal > 0 ? (lucTotal / prcTotal) * 100 : 0;
+                    let matTotal = matD * realDays; 
+                    let cstTotal = cstBase + cstExtras + matTotal; 
+                    let prcTotal = prcBase + prcExtras + matTotal; 
+                    let lucTotal = prcTotal - cstTotal; 
+                    let margemReal = prcTotal > 0 ? (lucTotal / prcTotal) * 100 : 0;
+                    
                     let valExibir = 0; let corT = 'text-gray-400';
-                    if(viewMode === 'preco') { valExibir = prcTotal; corT = 'text-blue-400 font-bold'; } else if(viewMode === 'lucro') { valExibir = lucTotal; corT = 'text-green-400 font-bold'; } else if(viewMode === 'custo') { valExibir = cstTotal; corT = 'text-red-300 font-medium'; } else { valExibir = margemReal; corT = 'text-purple-400 font-bold'; } 
-                    let txt = viewMode === 'margem' ? valExibir.toFixed(1)+'%' : formatMoney(valExibir); bodyHTML += `<td class="p-2 text-center ${corT} cursor-pointer hover:bg-dark-700" onclick="window.showMatrixDetails(${p},${d})">${txt}</td>`;
+                    if(viewMode === 'preco') { valExibir = prcTotal; corT = 'text-blue-400 font-bold'; } 
+                    else if(viewMode === 'lucro') { valExibir = lucTotal; corT = 'text-green-400 font-bold'; } 
+                    else if(viewMode === 'custo') { valExibir = cstTotal; corT = 'text-red-300 font-medium'; } 
+                    else { valExibir = margemReal; corT = 'text-purple-400 font-bold'; } 
+                    let txt = viewMode === 'margem' ? valExibir.toFixed(1)+'%' : formatMoney(valExibir); 
+                    bodyHTML += `<td class="p-2 text-center ${corT} cursor-pointer hover:bg-dark-700" onclick="window.showMatrixDetails(${p},${d})">${txt}</td>`;
                 }
                 bodyHTML += '</tr>';
             }
@@ -1097,95 +1126,84 @@
         }
 
         window.showMatrixDetails = function(p, d) {
-            const bCusto = parseFloat(document.getElementById('matrizCusto').value)||0; const bMargem = parseFloat(document.getElementById('matrizMargem').value)||0; const bMargemTipo = document.getElementById('matrizMargemTipo').value;
-            let cstBase = p * d * bCusto; let calcBase = calcularFaturamentoItem(cstBase, bMargemTipo==='perc'?bMargem:(bMargem*p*d), bMargemTipo);
-            document.getElementById('mdxTitle').innerText = `Visão: ${d} Dias`; document.getElementById('mdxBaseName').innerText = `${p} Profissionais (Base)`; document.getElementById('mdxBaseCusto').innerText = formatMoney(cstBase); document.getElementById('mdxBaseLucro').innerText = formatMoney(calcBase.margemEquipe);
-            const matTotal = window.globalMaterialDiario * d; if(matTotal > 0) { document.getElementById('mdxMatContainer').classList.remove('hidden'); document.getElementById('mdxMatCusto').innerText = formatMoney(matTotal); } else { document.getElementById('mdxMatContainer').classList.add('hidden'); }
+            const bCusto = parseFloat(document.getElementById('matrizCusto').value)||0; 
+            const bMargem = parseFloat(document.getElementById('matrizMargem').value)||0; 
+            const bMargemTipo = document.getElementById('matrizMargemTipo').value;
+            
+            const unit = document.getElementById('matrizUnidade').value; 
+            let unitLabel = 'Dias'; let daysMult = 1; let divMensal = false; let monthsCount = 1;
+            if(unit === 'meses') { unitLabel = 'Meses'; daysMult = 30; divMensal = true; monthsCount = d; } 
+            else if(unit === 'anos') { unitLabel = 'Anos'; daysMult = 365; divMensal = true; monthsCount = d * 12; }
+            
+            let realDays = d * daysMult; // Correção: Multiplica os dias totais do período
+            
+            let cstBase = p * realDays * bCusto; 
+            let calcBase = calcularFaturamentoItem(cstBase, bMargemTipo==='perc'?bMargem:(bMargem*p*realDays), bMargemTipo);
+            
+            document.getElementById('mdxTitle').innerText = `Cenário: ${d} ${unitLabel}`; 
+            document.getElementById('mdxBaseName').innerText = `${p} Profissionais (${realDays} dias)`; 
+            document.getElementById('mdxBaseCusto').innerText = formatMoney(cstBase); 
+            document.getElementById('mdxBaseLucro').innerText = formatMoney(calcBase.margemEquipe);
+            
+            const matTotal = window.globalMaterialDiario * realDays; 
+            if(matTotal > 0) { 
+                document.getElementById('mdxMatContainer').classList.remove('hidden'); 
+                document.getElementById('mdxMatCusto').innerText = formatMoney(matTotal); 
+            } else { 
+                document.getElementById('mdxMatContainer').classList.add('hidden'); 
+            }
+            
             let cstExtras = 0; let prcExtras = 0; const extList = document.getElementById('mdxExtrasList'); extList.innerHTML = '';
             if(window.matrizExtras.some(ex => (parseFloat(ex.qtd)||0) > 0)) {
                 document.getElementById('mdxExtrasContainer').classList.remove('hidden');
                 window.matrizExtras.forEach(ex => {
                     let qE = parseFloat(ex.qtd)||0; let cE = parseFloat(ex.custo)||0; let mE = parseFloat(ex.margem)||0; let hE = parseFloat(ex.horas)||1;
                     if(qE > 0) {
-                        let mult = 1; let fStr = ""; if(ex.frequencia === 'hora') { mult = d * hE; fStr = `${d} Dias x ${hE}h`; } else if(ex.frequencia === 'dia') { mult = d; fStr = `${d} Dias`; } else if(ex.frequencia === 'semana') { mult = Math.ceil(d/7); fStr = `${mult} Semanas`; } else if(ex.frequencia === 'mes') { mult = Math.ceil(d/30); fStr = `${mult} Meses`; } else if(ex.frequencia === 'prof') { mult = p; fStr = `${p} Profs`; } else { mult = 1; fStr = `Fixo/Único`; }
-                        let cEx = qE * cE * mult; let calcEx = calcularFaturamentoItem(cEx, ex.tipoMargem==='perc'?mE:(mE*qE*mult), ex.tipoMargem); cstExtras += cEx; prcExtras += calcEx.fatTotal;
+                        let mult = 1; let fStr = ""; 
+                        if(ex.frequencia === 'hora') { mult = realDays * hE; fStr = `${realDays}d x ${hE}h`; } 
+                        else if(ex.frequencia === 'dia') { mult = realDays; fStr = `${realDays}d`; } 
+                        else if(ex.frequencia === 'semana') { mult = Math.ceil(realDays/7); fStr = `${mult} Semanas`; } 
+                        else if(ex.frequencia === 'mes') { mult = Math.ceil(realDays/30); fStr = `${mult} Meses`; } 
+                        else if(ex.frequencia === 'prof') { mult = p; fStr = `${p} Profs`; } 
+                        else { mult = 1; fStr = `Fixo/Único`; }
+                        
+                        let cEx = qE * cE * mult; 
+                        let calcEx = calcularFaturamentoItem(cEx, ex.tipoMargem==='perc'?mE:(mE*qE*mult), ex.tipoMargem); 
+                        cstExtras += cEx; prcExtras += calcEx.fatTotal;
                         extList.insertAdjacentHTML('beforeend', `<div class="bg-dark-900 p-2 rounded border border-dark-700"><div class="flex justify-between text-xs text-gray-300 font-bold mb-1"><span>${qE}x ${ex.nome} <span class="text-[9px] text-gray-500 font-normal">(${fStr})</span></span><span>+ ${formatMoney(cEx)} (Custo)</span></div><div class="text-[9px] text-purple-300 text-right">↳ Lucro Add: ${formatMoney(calcEx.margemEquipe)}</div></div>`);
                     }
                 });
             } else { document.getElementById('mdxExtrasContainer').classList.add('hidden'); }
-            let cstTotal = cstBase + cstExtras + matTotal; let prcTotal = calcBase.fatTotal + prcExtras + matTotal; let lucTotal = prcTotal - cstTotal; let mReal = prcTotal > 0 ? (lucTotal / prcTotal) * 100 : 0;
-            document.getElementById('mdxCusto').innerText = formatMoney(cstTotal); document.getElementById('mdxLucro').innerText = formatMoney(lucTotal); document.getElementById('mdxPreco').innerText = formatMoney(prcTotal); document.getElementById('mdxMargem').innerText = mReal.toFixed(1) + '%';
+            
+            let cstTotal = cstBase + cstExtras + matTotal; 
+            let prcTotal = calcBase.fatTotal + prcExtras + matTotal; 
+            let lucTotal = prcTotal - cstTotal; 
+            let mReal = prcTotal > 0 ? (lucTotal / prcTotal) * 100 : 0;
+            
+            document.getElementById('mdxCusto').innerText = formatMoney(cstTotal); 
+            document.getElementById('mdxLucro').innerText = formatMoney(lucTotal); 
+            
+            // Lógica para mostrar Valor Total e Equivalente Mensal
+            if(divMensal && monthsCount > 0) {
+                document.getElementById('mdxPreco').innerHTML = `<div class="text-2xl font-black text-transparent bg-clip-text accent-gradient text-right">${formatMoney(prcTotal)}</div><div class="text-[9px] text-blue-300 font-bold uppercase tracking-wider mt-1 bg-blue-900/30 px-2 py-0.5 rounded border border-blue-500/30 text-right w-max ml-auto">Mensal: ${formatMoney(prcTotal / monthsCount)}</div>`;
+                document.getElementById('mdxPreco').className = "flex flex-col items-end";
+            } else {
+                document.getElementById('mdxPreco').innerHTML = formatMoney(prcTotal);
+                document.getElementById('mdxPreco').className = "text-2xl font-black text-transparent bg-clip-text accent-gradient";
+            }
+            
+            document.getElementById('mdxMargem').innerText = mReal.toFixed(1) + '%';
             document.getElementById('matrixDetailModal').classList.remove('hidden');
         }
 
         window.simularDesconto = function(tipo, silent=false) {
-            let inputId = tipo === 'evt' ? 'evtSimuladorPreco' : 'ctrSimuladorPreco'; 
-            let resId = tipo === 'evt' ? 'evtSimuladorResultado' : 'ctrSimuladorResultado'; 
-            let novoPreco = parseFloat(document.getElementById(inputId).value); 
-            const container = document.getElementById(resId);
-            
+            let inputId = tipo === 'evt' ? 'evtSimuladorPreco' : 'ctrSimuladorPreco'; let resId = tipo === 'evt' ? 'evtSimuladorResultado' : 'ctrSimuladorResultado'; let novoPreco = parseFloat(document.getElementById(inputId).value); const container = document.getElementById(resId);
             if(!novoPreco || isNaN(novoPreco)) { container.classList.add('hidden'); return; }
-            
             let custoAtual = 0;
-            let precoOriginal = 0;
-            let lucroOriginal = 0;
-            let clientName = "";
-
-            if(tipo === 'evt') { 
-                clientName = document.getElementById('clientName').value || 'Cliente Não Informado';
-                precoOriginal = parseFloat(document.getElementById('resFaturamento').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
-                lucroOriginal = parseFloat(document.getElementById('resMargemBruta').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
-                
-                const days = parseFloat(document.getElementById('eventDays').value) || 0; 
-                let useMat = document.getElementById('evtUseMaterial').checked; 
-                let diasMat = parseFloat(document.getElementById('evtMatDias').value) || 0; 
-                custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; 
-                window.eventCart.forEach(i => { let s = calcSubEvent(i, days); custoAtual += s.custoEquipe + s.custoEstrutura; }); 
-                let hCount = document.getElementById('evtChargeHolidays').checked ? (parseInt(document.getElementById('evtHolidayCountHidden').value)||0) : 0; 
-                if(hCount>0) { window.eventCart.forEach(i => { custoAtual += (parseFloat(i.qtd)||0) * (parseFloat(i.custoBase)||0) * (i.tipoCobranca==='hora'?(parseFloat(i.horasPorDia)||0):1) * hCount; }); } 
-            } else { 
-                clientName = document.getElementById('contractClientName').value || 'Empresa Não Informada';
-                precoOriginal = parseFloat(document.getElementById('contractFatMensal').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
-                lucroOriginal = parseFloat(document.getElementById('contractLucro').innerText.replace(/[R$\s.]/g,'').replace(',','.'));
-                
-                let useMat = document.getElementById('ctrUseMaterial').checked; 
-                let diasMat = parseFloat(document.getElementById('ctrMatDias').value) || 0; 
-                custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; 
-                window.contractCart.forEach(i => { let s = calcSubContract(i); custoAtual += s.custoEquipe + (parseFloat(i.custoMaterial)||0) + (parseFloat(i.servicoDiferenciado)||0); }); 
-            }
-            
-            let novoLucro = novoPreco - custoAtual; 
-            let novaMargem = novoPreco > 0 ? (novoLucro / novoPreco) * 100 : 0;
-            
-            let descontoRS = precoOriginal - novoPreco;
-            let descontoPerc = precoOriginal > 0 ? (descontoRS / precoOriginal) * 100 : 0;
-            let perdaLucro = lucroOriginal - novoLucro;
-            let margemOriginalPerc = precoOriginal > 0 ? (lucroOriginal / precoOriginal) : 0;
-            let reducaoCustoNecessaria = custoAtual - (novoPreco * (1 - margemOriginalPerc));
-
-            container.classList.remove('hidden'); 
-            let corMsg = novaMargem >= 20 ? 'text-blue-400' : 'text-red-400 font-bold'; 
-            let aviso = novaMargem < 20 ? `<div class="mt-2 text-red-500 font-bold bg-red-900/20 p-1.5 rounded border border-red-500/30 text-center">⚠️ ALERTA: Margem perigosamente baixa!</div>` : ''; 
-            
-            let htmlDetalhado = `
-                <div class="bg-dark-900 p-3 rounded-lg border border-dark-600 shadow-inner mt-3 w-full">
-                    <div class="text-[11px] text-gray-300 font-bold border-b border-dark-700 pb-1.5 mb-2 truncate">👤 Simulação para: ${clientName}</div>
-                    <div class="space-y-1.5 text-[11px]">
-                        <div class="flex justify-between text-gray-400"><span>Preço Original:</span> <span class="line-through">${formatMoney(precoOriginal)}</span></div>
-                        <div class="flex justify-between text-orange-400 font-medium"><span>Desconto Concedido:</span> <span>-${formatMoney(descontoRS)} (${descontoPerc.toFixed(1)}%)</span></div>
-                        <div class="flex justify-between text-gray-400"><span>Custo Fixo Mantido:</span> <span>${formatMoney(custoAtual)}</span></div>
-                    </div>
-                    <div class="h-px bg-dark-700 my-2"></div>
-                    <div class="space-y-1 text-[11px]">
-                        <div class="flex justify-between ${corMsg} font-bold"><span>Novo Lucro Livre:</span> <span>${formatMoney(novoLucro)}</span></div>
-                        <div class="flex justify-between text-gray-400"><span>Nova Margem:</span> <span class="${corMsg}">${novaMargem.toFixed(1)}%</span></div>
-                    </div>
-                    ${perdaLucro > 0 ? `<div class="text-[10px] text-orange-300 mt-2 pt-2 border-t border-dark-700 border-dashed">📉 Você perderá ${formatMoney(perdaLucro)} de lucro nesta negociação.</div>` : `<div class="text-[10px] text-green-400 mt-2 pt-2 border-t border-dark-700 border-dashed">📈 Você ganhará ${formatMoney(Math.abs(perdaLucro))} a mais de lucro.</div>`}
-                    ${(reducaoCustoNecessaria > 0 && descontoRS > 0) ? `<div class="text-[10px] text-gray-400 mt-2 leading-snug bg-dark-800 p-2 rounded border border-dark-700">💡 <b>Dica de Repasse:</b> Para não perder dinheiro e manter a margem de ${(margemOriginalPerc*100).toFixed(1)}%, você precisa cortar ${formatMoney(reducaoCustoNecessaria)} nos custos (Ex: reduzindo o repasse da equipe).</div>` : ''}
-                    ${aviso}
-                </div>
-            `;
-            container.innerHTML = htmlDetalhado;
+            if(tipo === 'evt') { const days = parseFloat(document.getElementById('eventDays').value) || 0; let useMat = document.getElementById('evtUseMaterial').checked; let diasMat = parseFloat(document.getElementById('evtMatDias').value) || 0; custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; window.eventCart.forEach(i => { let s = calcSubEvent(i, days); custoAtual += s.custoEquipe + s.custoEstrutura; }); let hCount = document.getElementById('evtChargeHolidays').checked ? (parseInt(document.getElementById('evtHolidayCountHidden').value)||0) : 0; if(hCount>0) { window.eventCart.forEach(i => { custoAtual += (parseFloat(i.qtd)||0) * (parseFloat(i.custoBase)||0) * (i.tipoCobranca==='hora'?(parseFloat(i.horasPorDia)||0):1) * hCount; }); } } 
+            else { let useMat = document.getElementById('ctrUseMaterial').checked; let diasMat = parseFloat(document.getElementById('ctrMatDias').value) || 0; custoAtual += useMat ? (window.globalMaterialDiario * diasMat) : 0; window.contractCart.forEach(i => { let s = calcSubContract(i); custoAtual += s.custoEquipe + (parseFloat(i.custoMaterial)||0) + (parseFloat(i.servicoDiferenciado)||0); }); }
+            let novoLucro = novoPreco - custoAtual; let novaMargem = novoPreco > 0 ? (novoLucro / novoPreco) * 100 : 0;
+            container.classList.remove('hidden'); let corMsg = novaMargem >= 20 ? 'text-blue-300' : 'text-red-400 font-bold'; let aviso = novaMargem < 20 ? '<br>⚠️ Atenção: A margem ficará perigosamente baixa!' : ''; container.innerHTML = `<span class="${corMsg}">Lucro Projetado: ${formatMoney(novoLucro)} (Margem: ${novaMargem.toFixed(1)}%)${aviso}</span>`;
         }
 
         // ==========================================
